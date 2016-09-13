@@ -80,6 +80,12 @@ def upload_file(file_path):
         base_dir = os.path.dirname(file_path)
         new_path = os.path.join(base_dir, cloud_file)
         os.rename(file_path, new_path)
+        # Create cloud dirs.
+        logger.info('Creating directories...')
+        current_dir = ''
+        for directory in cloud_dir.split('/'):
+            current_dir += '/{}'.format(directory)
+            subprocess.run('{} mkdir "{}"'.format(config.ACD_CLI_PATH, current_dir), shell=True)
         # Upload!
         process = subprocess.run('{} upload "{}" "{}"'.format(config.ACD_CLI_PATH, new_path, cloud_dir), shell=True)
         # Check results.
@@ -91,6 +97,12 @@ def upload_file(file_path):
             if not is_subtitles:
                 open(config.ORIGINAL_NAMES_LOG, 'a', encoding='UTF-8').write(file_path + '\n')
             os.remove(new_path)
+            # Sync!
+            process = subprocess.run('{} sync'.format(config.ACD_CLI_PATH), shell=True)
+            if process.returncode != 0:
+                logger.error('Bad return code ({}) for sync'.format(process.returncode))
+            else:
+                logger.info('Sync succeeded! Stopping.')
     else:
         logger.info('Couldn\'t guess file info. Skipping...')
 
