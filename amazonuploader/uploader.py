@@ -81,8 +81,7 @@ def upload_file(file_path):
         new_path = os.path.join(base_dir, cloud_file)
         os.rename(file_path, new_path)
         # Upload!
-        process = subprocess.run([config.ACD_CLI_PATH, 'upload', new_path, cloud_dir], shell=True,
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        process = subprocess.run('{} upload "{}" "{}"'.format(config.ACD_CLI_PATH, new_path, cloud_dir), shell=True)
         # Check results.
         if process.returncode != 0:
             logger.error('Bad return code ({}) for file: {}'.format(process.returncode, file_path))
@@ -91,7 +90,7 @@ def upload_file(file_path):
             # If everything went smoothly, delete the original file and add its name to the original names log.
             if not is_subtitles:
                 open(config.ORIGINAL_NAMES_LOG, 'a', encoding='UTF-8').write(file_path + '\n')
-            os.remove(file_path)
+            os.remove(new_path)
     else:
         logger.info('Couldn\'t guess file info. Skipping...')
 
