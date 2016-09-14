@@ -1,5 +1,5 @@
 #!/bin/bash
-FOLDER="/mnt/vdb/transmission"
+FOLDER="/mnt/vdb/data"
 /usr/local/bin/inotifywait -r -m $FOLDER -e create -e moved_to |
         while read path action file; do
                 echo "The file '$file' appeared in directory '$path' via '$action'"
