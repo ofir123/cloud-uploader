@@ -1,0 +1,11 @@
+[Unit]
+Description=Amazon Uploader
+
+[Service]
+Type=simple
+TimeoutStartSec=0
+User=amazon
+ExecStart=/opt/amazon-uploader/scripts/inotify_script
+
+[Install]
+WantedBy=multi-user.target
