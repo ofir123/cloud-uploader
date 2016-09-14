@@ -13,6 +13,9 @@ DEFAULT_VIDEO_EXTENSION = '.mkv'
 SUBTITLES_EXTENSIONS = ['.srt']
 LANGUAGE_EXTENSIONS = ['.he', '.en']
 
+EXTENSIONS_WHITE_LIST = ['.srt', '.mkv', '.avi', '.mp4', '.mov', '.m4v', '.wmv']
+NAMES_BLACK_LIST = ['sample']
+
 logger = logbook.Logger('AmazonUploader')
 
 
@@ -43,6 +46,13 @@ def upload_file(file_path):
         logger.info('File has no extension! Skipping...')
         return
     file_name, file_extension = file_parts
+    if file_extension not in EXTENSIONS_WHITE_LIST:
+        logger.info('File extension is not in white list! Skipping...')
+        return
+    for black_list_word in NAMES_BLACK_LIST:
+        if black_list_word in file_name.lower():
+            logger.info('File name contains a black listed word ({})! Skipping...'.format(black_list_word))
+            return
     language_extension = None
     is_subtitles = file_extension in SUBTITLES_EXTENSIONS
     # Fake extension for subtitles in order to help guessit.
