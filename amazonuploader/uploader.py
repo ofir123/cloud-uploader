@@ -32,6 +32,17 @@ def _get_log_handlers():
     ]
 
 
+def _sync():
+    """
+    Perform sync action.
+    """
+    process = subprocess.run('{} sync'.format(config.ACD_CLI_PATH), shell=True)
+    if process.returncode != 0:
+        logger.error('Bad return code ({}) for sync'.format(process.returncode))
+    else:
+        logger.info('Sync succeeded!')
+
+
 def upload_file(file_path):
     """
     Upload the given file to its proper Amazon cloud directory.
@@ -90,6 +101,8 @@ def upload_file(file_path):
         base_dir = os.path.dirname(file_path)
         new_path = os.path.join(base_dir, cloud_file)
         os.rename(file_path, new_path)
+        # Sync first.
+        _sync()
         # Create cloud dirs.
         logger.info('Creating directories...')
         current_dir = ''
@@ -107,12 +120,8 @@ def upload_file(file_path):
             if not is_subtitles:
                 open(config.ORIGINAL_NAMES_LOG, 'a', encoding='UTF-8').write(file_path + '\n')
             os.remove(new_path)
-            # Sync!
-            process = subprocess.run('{} sync'.format(config.ACD_CLI_PATH), shell=True)
-            if process.returncode != 0:
-                logger.error('Bad return code ({}) for sync'.format(process.returncode))
-            else:
-                logger.info('Sync succeeded! Stopping.')
+            # Sync again when done.
+            _sync()
     else:
         logger.info('Couldn\'t guess file info. Skipping...')
 
@@ -126,7 +135,6 @@ def main():
         file_path = os.path.abspath(sys.argv[1])
         if os.path.isfile(file_path):
             with logbook.NestedSetup(_get_log_handlers()).applicationbound():
-                logger.info('Amazon uploader started!')
                 upload_file(file_path)
         else:
             print('Invalid file path given. Stopping!')
