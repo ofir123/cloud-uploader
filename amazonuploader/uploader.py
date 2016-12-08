@@ -10,6 +10,7 @@ from guessit import guessit
 from amazonuploader import config
 
 DEFAULT_VIDEO_EXTENSION = '.mkv'
+DEFAULT_LANGUAGE_EXTENSION = '.en'
 SUBTITLES_EXTENSIONS = ['.srt']
 LANGUAGE_EXTENSIONS = ['.he', '.en']
 
@@ -74,6 +75,9 @@ def upload_file(file_path):
             fixed_file_name, language_extension = file_parts
             if language_extension in LANGUAGE_EXTENSIONS:
                 fixed_file_path = fixed_file_name + DEFAULT_VIDEO_EXTENSION
+            else:
+                language_extension = DEFAULT_LANGUAGE_EXTENSION
+                fixed_file_path = file_name + DEFAULT_VIDEO_EXTENSION
     # Create cloud path based on guessit results.
     cloud_dir = None
     cloud_file = None
