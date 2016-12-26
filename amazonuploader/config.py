@@ -1,5 +1,6 @@
 # acd_cli settings.
 ACD_CLI_PATH = '/usr/bin/acd_cli'
+MAX_UPLOAD_TRIES = 3
 
 # Directories settings.
 TV_PATH = '/Media/TV'
