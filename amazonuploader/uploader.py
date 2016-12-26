@@ -130,6 +130,8 @@ def upload_file(file_path):
                 logger.error('Bad return code ({}) for file: {}'.format(process.returncode, new_path))
                 if upload_tries < config.MAX_UPLOAD_TRIES:
                     logger.info('Trying again!')
+                    # Sync in case the file was actually uploaded.
+                    _sync()
                 else:
                     logger.error('Max retries with no success! Skipping...')
         # If everything went smoothly, add the file name to the original names log.
