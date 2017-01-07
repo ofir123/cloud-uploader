@@ -65,9 +65,8 @@ def _encrypt(encrypted_dir, plain_dir):
     encryption_process = subprocess.run('echo {} | {} -S "{}" "{}"'.format(
         config.ENCFS_PASSWORD, config.ENCFS_PATH, encrypted_dir, plain_dir), shell=True)
     encryption_return_code = encryption_process.returncode
-    if encryption_return_code != 1:
-        logger.error('Bad return code ({}) for encryption of file: {}. Stopping!'.format(
-            encryption_return_code, os.path.basename(plain_dir)))
+    if encryption_return_code != 0:
+        logger.error('Bad return code ({}) for encryption. Stopping!'.format(encryption_return_code))
         return False
     return True
 
