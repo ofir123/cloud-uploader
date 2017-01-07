@@ -132,11 +132,13 @@ def upload_file(file_path):
         cloud_file += file_extension
         logger.info('Cloud path: {}'.format(os.path.join(cloud_dir, cloud_file)))
         # Create a temporary random cloud dir structure.
+        original_dir = os.path.dirname(file_path)
         random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        base_dir = os.path.join(os.path.dirname(file_path), random_dir_name)
+        base_dir = os.path.join(original_dir, random_dir_name)
         plain_base_dir = os.path.join(base_dir, 'plain')
         os.makedirs(plain_base_dir)
         cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
+        final_file_path = os.path.join(cloud_temp_path, cloud_file)
         # Use the plain directory when uploading, unless encryption is enabled.
         upload_base_dir = plain_base_dir
         # Set up encryption if needed.
@@ -152,8 +154,7 @@ def upload_file(file_path):
         logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
         os.makedirs(cloud_temp_path)
         shutil.move(file_path, cloud_temp_path)
-        os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)),
-                  os.path.join(cloud_temp_path, cloud_file))
+        os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)), final_file_path)
         # Sync first.
         _sync()
         # Upload!
@@ -162,8 +163,7 @@ def upload_file(file_path):
         while return_code != 0 and upload_tries < config.MAX_UPLOAD_TRIES:
             logger.info('Uploading file...')
             upload_tries += 1
-            process = subprocess.run('{} upload -o --remove-source-files "{}" /'.format(
-                config.ACD_CLI_PATH, upload_base_dir), shell=True)
+            process = subprocess.run('{} upload "{}" /'.format(config.ACD_CLI_PATH, upload_base_dir), shell=True)
             # Check results.
             return_code = process.returncode
             if return_code != 0:
@@ -177,12 +177,18 @@ def upload_file(file_path):
         # If everything went smoothly, add the file name to the original names log.
         if return_code == 0:
             logger.info('Upload succeeded! Deleting original file...')
-            # Unmount ENCFS directory tree first.
-            if config.SHOULD_ENCRYPT:
-                subprocess.run('{} -u "{}"'.format(config.FUSERMOUNT_PATH, plain_base_dir), shell=True)
-            shutil.rmtree(base_dir)
             if not is_subtitles:
                 open(config.ORIGINAL_NAMES_LOG, 'a', encoding='UTF-8').write(file_path + '\n')
+        else:
+            # Reverse everything.
+            logger.info('Upload failed! Reversing all changes...')
+            shutil.move(final_file_path, original_dir)
+            os.rename(os.path.join(original_dir, cloud_file), file_path)
+        # Unmount ENCFS directory.
+        if config.SHOULD_ENCRYPT:
+            subprocess.run('{} -u "{}"'.format(config.FUSERMOUNT_PATH, plain_base_dir), shell=True)
+        # Delete all temporary directories.
+        shutil.rmtree(base_dir)
     else:
         logger.info('Couldn\'t guess file info. Skipping...')
 
