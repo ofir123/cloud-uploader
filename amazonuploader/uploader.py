@@ -62,8 +62,8 @@ def _encrypt(encrypted_dir, plain_dir):
         return False
     # Encrypt!
     os.makedirs(encrypted_dir)
-    encryption_process = subprocess.run('{} "{}" "{}"'.format(
-        config.ENCFS_PATH, encrypted_dir, plain_dir), shell=True)
+    encryption_process = subprocess.run('echo {} | {} -S "{}" "{}"'.format(
+        config.ENCFS_PASSWORD, config.ENCFS_PATH, encrypted_dir, plain_dir), shell=True)
     encryption_return_code = encryption_process.returncode
     if encryption_return_code != 1:
         logger.error('Bad return code ({}) for encryption of file: {}. Stopping!'.format(
@@ -139,22 +139,20 @@ def upload_file(file_path):
         cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
         os.makedirs(cloud_temp_path, exist_ok=True)
         cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
-        logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
-        shutil.move(file_path, cloud_temp_path)
         # Use the plain directory when uploading, unless encryption is enabled.
         upload_base_dir = plain_base_dir
-        # Encrypt if needed.
+        # Set up encryption if needed.
         if config.SHOULD_ENCRYPT:
             encrypted_base_dir = os.path.join(base_dir, 'encrypted')
             encryption_successful = _encrypt(encrypted_base_dir, plain_base_dir)
             if not encryption_successful:
-                # Reverse move action, delete directories and stop.
-                shutil.move(cloud_temp_path, file_path)
+                # Delete directories and stop.
                 shutil.rmtree(base_dir)
                 return
-            else:
-                # Upload the encrypted directory tree instead of the plain one.
-                upload_base_dir = encrypted_base_dir
+            # Upload the encrypted directory tree instead of the plain one.
+            upload_base_dir = encrypted_base_dir
+        logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
+        shutil.move(file_path, cloud_temp_path)
         # Sync first.
         _sync()
         # Upload!

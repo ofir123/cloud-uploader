@@ -7,6 +7,7 @@ SHOULD_ENCRYPT = True
 ENCFS_PATH = '/usr/bin/encfs'
 FUSERMOUNT_PATH = '/usr/bin/fusermount'
 ENCFS_ENVIRONMENT_VARIABLE = 'ENCFS6_CONFIG'
+ENCFS_PASSWORD = 'Password1'
 
 # Directories settings.
 CLOUD_TV_PATH = 'Media/TV'
