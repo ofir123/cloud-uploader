@@ -11,6 +11,7 @@ ENCFS_PASSWORD = 'Password1'
 
 # Directories settings.
 CLOUD_ENCRYPTED_PATH = 'Encrypted'
+CLOUD_PLAIN_PATH = 'Media'
 CLOUD_TV_PATH = 'TV'
 CLOUD_MOVIE_PATH = 'Movies'
 ORIGINAL_NAMES_LOG = '/mnt/vdb/data/original_names.log'

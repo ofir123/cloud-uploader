@@ -135,7 +135,7 @@ def upload_file(file_path):
         original_dir = os.path.dirname(file_path)
         random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
         base_dir = os.path.join(original_dir, random_dir_name)
-        plain_base_dir = os.path.join(base_dir, 'plain')
+        plain_base_dir = os.path.join(base_dir, config.CLOUD_PLAIN_PATH)
         os.makedirs(plain_base_dir)
         cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
         final_file_path = os.path.join(cloud_temp_path, cloud_file)
