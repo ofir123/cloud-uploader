@@ -4,7 +4,6 @@ import shutil
 import subprocess
 import sys
 import string
-import posixpath
 import random
 
 import logbook
@@ -121,18 +120,18 @@ def upload_file(file_path):
         if season:
             episode = guess_results.get('episode')
             if episode:
-                cloud_dir = '{}/{}/Season {:02d}'.format(config.TV_PATH, title, season)
+                cloud_dir = '{}/{}/Season {:02d}'.format(config.CLOUD_TV_PATH, title, season)
                 cloud_file = '{} - S{:02d}E{:02d}'.format(title, season, episode)
     elif video_type == 'movie' and title:
         year = guess_results.get('year')
         if year:
-            cloud_dir = '{}/{} ({})'.format(config.MOVIE_PATH, title, year)
+            cloud_dir = '{}/{} ({})'.format(config.CLOUD_MOVIE_PATH, title, year)
             cloud_file = '{} ({})'.format(title, year)
     if cloud_dir and cloud_file:
         if language_extension:
             cloud_file += language_extension
         cloud_file += file_extension
-        logger.info('Cloud path: {}'.format(posixpath.join(cloud_dir, cloud_file)))
+        logger.info('Cloud path: {}'.format(os.path.join(cloud_dir, cloud_file)))
         # Create a temporary random cloud dir structure.
         random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
         base_dir = os.path.join(os.path.dirname(file_path), random_dir_name)
@@ -140,6 +139,7 @@ def upload_file(file_path):
         cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
         os.makedirs(cloud_temp_path, exist_ok=True)
         cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
+        logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
         shutil.move(file_path, cloud_temp_path)
         # Use the plain directory when uploading, unless encryption is enabled.
         upload_base_dir = plain_base_dir
