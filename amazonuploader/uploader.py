@@ -152,7 +152,8 @@ def upload_file(file_path):
         logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
         os.makedirs(cloud_temp_path)
         shutil.move(file_path, cloud_temp_path)
-        os.rename(os.path.join(cloud_temp_path, file_path), os.path.join(cloud_temp_path, cloud_file))
+        os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)),
+                  os.path.join(cloud_temp_path, cloud_file))
         # Sync first.
         _sync()
         # Upload!
