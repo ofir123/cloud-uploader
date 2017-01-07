@@ -108,13 +108,41 @@ def upload_file(file_path):
         cloud_file += file_extension
         logger.info('Cloud path: {}'.format(posixpath.join(cloud_dir, cloud_file)))
         # Create a temporary random cloud dir structure.
-        original_dir = os.path.dirname(file_path)
         random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        new_base_dir = os.path.join(original_dir, random_dir_name)
-        cloud_temp_path = os.path.join(new_base_dir, cloud_dir)
+        base_dir = os.path.join(os.path.dirname(file_path), random_dir_name)
+        plain_base_dir = os.path.join(base_dir, 'plain')
+        cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
         os.makedirs(cloud_temp_path, exist_ok=True)
         cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
         shutil.move(file_path, cloud_temp_path)
+        # Encrypt if needed.
+        if config.SHOULD_ENCRYPT:
+            logger.info('Encrypting directory tree...')
+            # Verify config environment variable first.
+            if not os.environ.get(config.ENCFS_ENVIRONMENT_VARIABLE):
+                logger.error('{} environment variable is not defined. Stopping!'.format(
+                    config.ENCFS_ENVIRONMENT_VARIABLE))
+                # Reverse move action, delete directories and stop.
+                shutil.move(cloud_temp_path, file_path)
+                shutil.rmtree(base_dir)
+                return
+            # Encrypt!
+            encryption_base_dir = os.path.join(base_dir, 'encrypted')
+            os.makedirs(encryption_base_dir)
+            encryption_process = subprocess.run('{} "{}" "{}"'.format(
+                config.ENCFS_PATH, encryption_base_dir, plain_base_dir), shell=True)
+            encryption_return_code = encryption_process.returncode
+            if encryption_return_code != 1:
+                logger.error('Bad return code ({}) for encryption of file: {}. Stopping!'.format(
+                    encryption_return_code, cloud_file))
+                # Reverse move action, delete directories and stop.
+                shutil.move(cloud_temp_path, file_path)
+                shutil.rmtree(base_dir)
+                return
+            # Upload the encrypted directory tree instead of the plain one.
+            upload_base_dir = encryption_base_dir
+        else:
+            upload_base_dir = plain_base_dir
         # Sync first.
         _sync()
         # Upload!
@@ -124,7 +152,7 @@ def upload_file(file_path):
             logger.info('Uploading file...')
             upload_tries += 1
             process = subprocess.run('{} upload -o --remove-source-files "{}/*" /'.format(
-                config.ACD_CLI_PATH, new_base_dir), shell=True)
+                config.ACD_CLI_PATH, upload_base_dir), shell=True)
             # Check results.
             return_code = process.returncode
             if return_code != 0:
@@ -138,7 +166,10 @@ def upload_file(file_path):
         # If everything went smoothly, add the file name to the original names log.
         if return_code == 0:
             logger.info('Upload succeeded! Deleting original file...')
-            shutil.rmtree(new_base_dir)
+            # Unmount ENCFS directory tree first.
+            if config.SHOULD_ENCRYPT:
+                subprocess.run('{} -u "{}"'.format(config.FUSERMOUNT_PATH, plain_base_dir), shell=True)
+            shutil.rmtree(base_dir)
             if not is_subtitles:
                 open(config.ORIGINAL_NAMES_LOG, 'a', encoding='UTF-8').write(file_path + '\n')
     else:
