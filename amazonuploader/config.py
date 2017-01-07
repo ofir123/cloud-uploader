@@ -10,8 +10,9 @@ ENCFS_ENVIRONMENT_VARIABLE = 'ENCFS6_CONFIG'
 ENCFS_PASSWORD = 'Password1'
 
 # Directories settings.
-CLOUD_TV_PATH = 'Media/TV'
-CLOUD_MOVIE_PATH = 'Media/Movies'
+CLOUD_ENCRYPTED_PATH = 'Encrypted'
+CLOUD_TV_PATH = 'TV'
+CLOUD_MOVIE_PATH = 'Movies'
 ORIGINAL_NAMES_LOG = '/mnt/vdb/data/original_names.log'
 
 # Log settings.

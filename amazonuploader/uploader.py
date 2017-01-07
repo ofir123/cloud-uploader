@@ -142,7 +142,7 @@ def upload_file(file_path):
         upload_base_dir = plain_base_dir
         # Set up encryption if needed.
         if config.SHOULD_ENCRYPT:
-            encrypted_base_dir = os.path.join(base_dir, 'encrypted')
+            encrypted_base_dir = os.path.join(base_dir, config.CLOUD_ENCRYPTED_PATH)
             encryption_successful = _encrypt(encrypted_base_dir, plain_base_dir)
             if not encryption_successful:
                 # Delete directories and stop.
@@ -161,7 +161,7 @@ def upload_file(file_path):
         while return_code != 0 and upload_tries < config.MAX_UPLOAD_TRIES:
             logger.info('Uploading file...')
             upload_tries += 1
-            process = subprocess.run('{} upload -o --remove-source-files "{}/*" /'.format(
+            process = subprocess.run('{} upload -o --remove-source-files "{}" /'.format(
                 config.ACD_CLI_PATH, upload_base_dir), shell=True)
             # Check results.
             return_code = process.returncode
