@@ -137,7 +137,6 @@ def upload_file(file_path):
         base_dir = os.path.join(os.path.dirname(file_path), random_dir_name)
         plain_base_dir = os.path.join(base_dir, 'plain')
         cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
-        os.makedirs(cloud_temp_path, exist_ok=True)
         cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
         # Use the plain directory when uploading, unless encryption is enabled.
         upload_base_dir = plain_base_dir
@@ -152,6 +151,7 @@ def upload_file(file_path):
             # Upload the encrypted directory tree instead of the plain one.
             upload_base_dir = encrypted_base_dir
         logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
+        os.makedirs(cloud_temp_path, exist_ok=True)
         shutil.move(file_path, cloud_temp_path)
         # Sync first.
         _sync()
