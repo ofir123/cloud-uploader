@@ -47,6 +47,32 @@ def _sync():
         logger.info('Sync succeeded!')
 
 
+def _encrypt(encrypted_dir, plain_dir):
+    """
+    Encrypt the given plain directory.
+
+    :param encrypted_dir: The encrypted directory to create.
+    :param plain_dir: The plain directory to encrypt (recursively).
+    :return: True if succeeded, and False otherwise.
+    """
+    logger.info('Encrypting directory tree...')
+    # Verify config environment variable first.
+    if not os.environ.get(config.ENCFS_ENVIRONMENT_VARIABLE):
+        logger.error('{} environment variable is not defined. Stopping!'.format(
+            config.ENCFS_ENVIRONMENT_VARIABLE))
+        return False
+    # Encrypt!
+    os.makedirs(encrypted_dir)
+    encryption_process = subprocess.run('{} "{}" "{}"'.format(
+        config.ENCFS_PATH, encrypted_dir, plain_dir), shell=True)
+    encryption_return_code = encryption_process.returncode
+    if encryption_return_code != 1:
+        logger.error('Bad return code ({}) for encryption of file: {}. Stopping!'.format(
+            encryption_return_code, os.path.basename(plain_dir)))
+        return False
+    return True
+
+
 def upload_file(file_path):
     """
     Upload the given file to its proper Amazon cloud directory.
@@ -115,34 +141,20 @@ def upload_file(file_path):
         os.makedirs(cloud_temp_path, exist_ok=True)
         cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
         shutil.move(file_path, cloud_temp_path)
+        # Use the plain directory when uploading, unless encryption is enabled.
+        upload_base_dir = plain_base_dir
         # Encrypt if needed.
         if config.SHOULD_ENCRYPT:
-            logger.info('Encrypting directory tree...')
-            # Verify config environment variable first.
-            if not os.environ.get(config.ENCFS_ENVIRONMENT_VARIABLE):
-                logger.error('{} environment variable is not defined. Stopping!'.format(
-                    config.ENCFS_ENVIRONMENT_VARIABLE))
+            encrypted_base_dir = os.path.join(base_dir, 'encrypted')
+            encryption_successful = _encrypt(encrypted_base_dir, plain_base_dir)
+            if not encryption_successful:
                 # Reverse move action, delete directories and stop.
                 shutil.move(cloud_temp_path, file_path)
                 shutil.rmtree(base_dir)
                 return
-            # Encrypt!
-            encryption_base_dir = os.path.join(base_dir, 'encrypted')
-            os.makedirs(encryption_base_dir)
-            encryption_process = subprocess.run('{} "{}" "{}"'.format(
-                config.ENCFS_PATH, encryption_base_dir, plain_base_dir), shell=True)
-            encryption_return_code = encryption_process.returncode
-            if encryption_return_code != 1:
-                logger.error('Bad return code ({}) for encryption of file: {}. Stopping!'.format(
-                    encryption_return_code, cloud_file))
-                # Reverse move action, delete directories and stop.
-                shutil.move(cloud_temp_path, file_path)
-                shutil.rmtree(base_dir)
-                return
-            # Upload the encrypted directory tree instead of the plain one.
-            upload_base_dir = encryption_base_dir
-        else:
-            upload_base_dir = plain_base_dir
+            else:
+                # Upload the encrypted directory tree instead of the plain one.
+                upload_base_dir = encrypted_base_dir
         # Sync first.
         _sync()
         # Upload!
