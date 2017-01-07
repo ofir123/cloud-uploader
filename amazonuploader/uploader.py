@@ -1,8 +1,11 @@
 #!/usr/local/bin/python3.5
 import os
+import shutil
 import subprocess
 import sys
+import string
 import posixpath
+import random
 
 import logbook
 from guessit import guessit
@@ -104,30 +107,28 @@ def upload_file(file_path):
             cloud_file += language_extension
         cloud_file += file_extension
         logger.info('Cloud path: {}'.format(posixpath.join(cloud_dir, cloud_file)))
-        # Rename local file before upload.
-        base_dir = os.path.dirname(file_path)
-        new_path = os.path.join(base_dir, cloud_file)
-        os.rename(file_path, new_path)
+        # Create a temporary random cloud dir structure.
+        original_dir = os.path.dirname(file_path)
+        random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        new_base_dir = os.path.join(original_dir, random_dir_name)
+        cloud_temp_path = os.path.join(new_base_dir, cloud_dir)
+        os.makedirs(cloud_temp_path, exist_ok=True)
+        cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
+        shutil.move(file_path, cloud_temp_path)
         # Sync first.
         _sync()
-        # Create cloud dirs.
-        logger.info('Creating directories...')
-        current_dir = ''
-        for directory in cloud_dir.split('/'):
-            current_dir += '/{}'.format(directory)
-            subprocess.run('{} mkdir "{}"'.format(config.ACD_CLI_PATH, current_dir), shell=True)
         # Upload!
         upload_tries = 0
         return_code = 1
         while return_code != 0 and upload_tries < config.MAX_UPLOAD_TRIES:
             logger.info('Uploading file...')
             upload_tries += 1
-            process = subprocess.run('{} upload -o --remove-source-files "{}" "{}"'.format(
-                config.ACD_CLI_PATH, new_path, cloud_dir), shell=True)
+            process = subprocess.run('{} upload -o --remove-source-files "{}/*" /'.format(
+                config.ACD_CLI_PATH, new_base_dir), shell=True)
             # Check results.
             return_code = process.returncode
             if return_code != 0:
-                logger.error('Bad return code ({}) for file: {}'.format(process.returncode, new_path))
+                logger.error('Bad return code ({}) for file: {}'.format(process.returncode, cloud_file))
                 if upload_tries < config.MAX_UPLOAD_TRIES:
                     logger.info('Trying again!')
                     # Sync in case the file was actually uploaded.
@@ -137,8 +138,7 @@ def upload_file(file_path):
         # If everything went smoothly, add the file name to the original names log.
         if return_code == 0:
             logger.info('Upload succeeded! Deleting original file...')
-            if os.path.isfile(new_path):
-                os.remove(new_path)
+            shutil.rmtree(new_base_dir)
             if not is_subtitles:
                 open(config.ORIGINAL_NAMES_LOG, 'a', encoding='UTF-8').write(file_path + '\n')
     else:
