@@ -137,7 +137,6 @@ def upload_file(file_path):
         plain_base_dir = os.path.join(base_dir, 'plain')
         os.makedirs(plain_base_dir)
         cloud_temp_path = os.path.join(plain_base_dir, cloud_dir)
-        cloud_temp_path = os.path.join(cloud_temp_path, cloud_file)
         # Use the plain directory when uploading, unless encryption is enabled.
         upload_base_dir = plain_base_dir
         # Set up encryption if needed.
@@ -153,6 +152,7 @@ def upload_file(file_path):
         logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
         os.makedirs(cloud_temp_path)
         shutil.move(file_path, cloud_temp_path)
+        os.rename(os.path.join(cloud_temp_path, file_path), os.path.join(cloud_temp_path, cloud_file))
         # Sync first.
         _sync()
         # Upload!
