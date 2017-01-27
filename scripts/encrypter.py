@@ -25,7 +25,7 @@ def main():
     Downloads all media from the Amazon cloud drive, and uploads it back encrypted.
     """
     # Sync before starting anything...
-    subprocess.run('{} sync'.format(ACD_CLI_PATH), shell=True)
+    subprocess.call('{} sync'.format(ACD_CLI_PATH), shell=True)
     files_map = shelve.open(SHELVE_PATH)
     try:
         for root, _, files in os.walk(os.path.join(AMAZON_MEDIA_DIR, CURRENT_AMAZON_DIR)):
@@ -39,11 +39,10 @@ def main():
                 # Create encryption directory.
                 os.makedirs(TEMP_PLAIN_DIR)
                 os.makedirs(TEMP_ENCRYPTED_DIR)
-                encryption_process = subprocess.run('echo {} | {} -S "{}" "{}"'.format(
+                return_code = subprocess.call('echo {} | {} -S "{}" "{}"'.format(
                     ENCFS_PASSWORD, ENCFS_PATH, TEMP_ENCRYPTED_DIR, TEMP_PLAIN_DIR), shell=True)
-                encryption_return_code = encryption_process.returncode
-                if encryption_return_code != 0:
-                    print('Bad return code ({}) for encryption. Skipping file!'.format(encryption_return_code))
+                if return_code != 0:
+                    print('Bad return code ({}) for encryption. Skipping file!'.format(return_code))
                     continue
                 # Download!
                 new_file_path = file_path.replace(AMAZON_MEDIA_DIR, TEMP_PLAIN_DIR)
@@ -54,13 +53,11 @@ def main():
                 return_code = 1
                 while return_code != 0 and tries < MAX_TRIES:
                     tries += 1
-                    process = subprocess.run('{} download "{}" "{}"'.format(ACD_CLI_PATH, cloud_path, new_base_dir),
-                                             shell=True)
+                    return_code = subprocess.call('{} download "{}" "{}"'.format(
+                        ACD_CLI_PATH, cloud_path, new_base_dir), shell=True)
                     # Check results.
-                    return_code = process.returncode
                     if return_code != 0:
-                        print('Bad return code ({}) for file: {}'.format(process.returncode,
-                                                                         os.path.basename(cloud_path)))
+                        print('Bad return code ({}) for file: {}'.format(return_code, os.path.basename(cloud_path)))
                         if tries < MAX_TRIES:
                             print('Trying again!')
                         else:
@@ -71,16 +68,15 @@ def main():
                 return_code = 1
                 while return_code != 0 and tries < MAX_TRIES:
                     tries += 1
-                    process = subprocess.run('{} upload "{}" /'.format(ACD_CLI_PATH, TEMP_ENCRYPTED_DIR), shell=True)
+                    return_code = subprocess.call('{} upload "{}" /'.format(
+                        ACD_CLI_PATH, TEMP_ENCRYPTED_DIR), shell=True)
                     # Check results.
-                    return_code = process.returncode
                     if return_code != 0:
-                        print('Bad return code ({}) for file: {}'.format(process.returncode,
-                                                                         os.path.basename(new_file_path)))
+                        print('Bad return code ({}) for file: {}'.format(return_code, os.path.basename(new_file_path)))
                         if tries < MAX_TRIES:
                             print('Trying again!')
                             # Sync in case the file was actually uploaded.
-                            subprocess.run('{} sync'.format(ACD_CLI_PATH), shell=True)
+                            subprocess.call('{} sync'.format(ACD_CLI_PATH), shell=True)
                         else:
                             print('Max retries with no success! Skipping...')
                 # If everything went smoothly, add the file path to the persistent shelve.
@@ -90,17 +86,17 @@ def main():
                 else:
                     files_map[file_path] = False
                     print('Upload failed!')
-                subprocess.run('{} -u "{}"'.format(FUSERMOUNT_PATH, TEMP_PLAIN_DIR), shell=True)
+                subprocess.call('{} -u "{}"'.format(FUSERMOUNT_PATH, TEMP_PLAIN_DIR), shell=True)
                 # Delete all temporary directories.
                 shutil.rmtree(TEMP_PLAIN_DIR)
                 shutil.rmtree(TEMP_ENCRYPTED_DIR)
                 # Reset sync.
-                subprocess.run('{} sync'.format(ACD_CLI_PATH), shell=True)
+                subprocess.call('{} sync'.format(ACD_CLI_PATH), shell=True)
                 if not os.path.isdir(AMAZON_DIR):
                     print('Resetting sync...')
-                    subprocess.run('{} umount {}'.format(ACD_CLI_PATH, AMAZON_DIR), shell=True)
-                    subprocess.run('{} sync'.format(ACD_CLI_PATH), shell=True)
-                    subprocess.run('{} mount -ao {}'.format(ACD_CLI_PATH, AMAZON_DIR), shell=True)
+                    subprocess.call('{} umount {}'.format(ACD_CLI_PATH, AMAZON_DIR), shell=True)
+                    subprocess.call('{} sync'.format(ACD_CLI_PATH), shell=True)
+                    subprocess.call('{} mount -ao {}'.format(ACD_CLI_PATH, AMAZON_DIR), shell=True)
     finally:
         files_map.close()
 
