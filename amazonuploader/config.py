@@ -1,3 +1,6 @@
+# Post-upload settings.
+SHOULD_DELETE = True
+
 # acd_cli settings.
 ACD_CLI_PATH = '/usr/bin/acd_cli'
 MAX_UPLOAD_TRIES = 3

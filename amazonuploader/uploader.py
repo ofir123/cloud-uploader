@@ -153,7 +153,10 @@ def upload_file(file_path):
             upload_base_dir = encrypted_base_dir
         logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
         os.makedirs(cloud_temp_path)
-        shutil.move(file_path, cloud_temp_path)
+        if config.SHOULD_DELETE:
+            shutil.move(file_path, cloud_temp_path)
+        else:
+            shutil.copyfile(file_path, cloud_temp_path)
         os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)), final_file_path)
         # Sync first.
         _sync()
@@ -182,8 +185,9 @@ def upload_file(file_path):
         else:
             # Reverse everything.
             logger.info('Upload failed! Reversing all changes...')
-            shutil.move(final_file_path, original_dir)
-            os.rename(os.path.join(original_dir, cloud_file), file_path)
+            if config.SHOULD_DELETE:
+                shutil.move(final_file_path, original_dir)
+                os.rename(os.path.join(original_dir, cloud_file), file_path)
         # Unmount ENCFS directory.
         if config.SHOULD_ENCRYPT:
             subprocess.run('{} -u "{}"'.format(config.FUSERMOUNT_PATH, plain_base_dir), shell=True)
