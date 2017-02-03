@@ -155,7 +155,7 @@ def upload_file(file_path):
         if config.SHOULD_DELETE:
             shutil.move(file_path, cloud_temp_path)
         else:
-            shutil.copyfile(file_path, cloud_temp_path)
+            shutil.copy(file_path, cloud_temp_path)
         os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)), final_file_path)
         # Sync first.
         _sync()
