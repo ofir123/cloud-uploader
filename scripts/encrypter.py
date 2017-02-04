@@ -62,31 +62,36 @@ def main():
                             print('Trying again!')
                         else:
                             print('Max retries with no success! Skipping...')
-                # Upload!
-                print('Uploading {}...'.format(f))
-                tries = 0
-                return_code = 1
-                while return_code != 0 and tries < MAX_TRIES:
-                    tries += 1
-                    return_code = subprocess.call('{} upload "{}" /'.format(
-                        ACD_CLI_PATH, TEMP_ENCRYPTED_DIR), shell=True)
-                    # Check results.
-                    if return_code != 0:
-                        print('Bad return code ({}) for file: {}'.format(return_code, os.path.basename(new_file_path)))
-                        if tries < MAX_TRIES:
-                            print('Trying again!')
-                            # Sync in case the file was actually uploaded.
-                            subprocess.call('{} sync'.format(ACD_CLI_PATH), shell=True)
-                        else:
-                            print('Max retries with no success! Skipping...')
-                # If everything went smoothly, add the file path to the persistent shelve.
-                if return_code == 0:
-                    files_map[file_path] = True
-                    print('Done!')
-                else:
+                if return_code != 0:
                     files_map[file_path] = False
-                    print('Upload failed!')
-                subprocess.call('{} -u "{}"'.format(FUSERMOUNT_PATH, TEMP_PLAIN_DIR), shell=True)
+                    print('Download failed!')
+                else:
+                    # Upload!
+                    print('Uploading {}...'.format(f))
+                    tries = 0
+                    return_code = 1
+                    while return_code != 0 and tries < MAX_TRIES:
+                        tries += 1
+                        return_code = subprocess.call('{} upload -o "{}" /'.format(
+                            ACD_CLI_PATH, TEMP_ENCRYPTED_DIR), shell=True)
+                        # Check results.
+                        if return_code != 0:
+                            print('Bad return code ({}) for file: {}'.format(
+                                return_code, os.path.basename(new_file_path)))
+                            if tries < MAX_TRIES:
+                                print('Trying again!')
+                                # Sync in case the file was actually uploaded.
+                                subprocess.call('{} sync'.format(ACD_CLI_PATH), shell=True)
+                            else:
+                                print('Max retries with no success! Skipping...')
+                    # If everything went smoothly, add the file path to the persistent shelve.
+                    if return_code != 0:
+                        files_map[file_path] = False
+                        print('Upload failed!')
+                    else:
+                        files_map[file_path] = True
+                        print('Done!')
+                    subprocess.call('{} -u "{}"'.format(FUSERMOUNT_PATH, TEMP_PLAIN_DIR), shell=True)
                 # Delete all temporary directories.
                 shutil.rmtree(TEMP_PLAIN_DIR)
                 shutil.rmtree(TEMP_ENCRYPTED_DIR)
