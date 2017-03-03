@@ -10,6 +10,7 @@ import logbook
 from guessit import guessit
 
 from amazonuploader import config
+from amazonuploader.shows_map import SHOWS_MAP
 
 DEFAULT_VIDEO_EXTENSION = '.mkv'
 DEFAULT_LANGUAGE_EXTENSION = '.en'
@@ -115,6 +116,9 @@ def upload_file(file_path):
     if title:
         title = title.title()
     if video_type == 'episode' and title:
+        # Translate show title if needed.
+        if title in SHOWS_MAP:
+            title = SHOWS_MAP[title.lower()]
         season = guess_results.get('season')
         if season:
             episode = guess_results.get('episode')
