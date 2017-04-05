@@ -18,6 +18,7 @@ CLOUD_ENCRYPTED_PATH = 'Encrypted'
 CLOUD_PLAIN_PATH = 'Media'
 CLOUD_TV_PATH = 'TV'
 CLOUD_MOVIE_PATH = 'Movies'
+CLOUD_VIDEO_PATH = 'Videos'
 ORIGINAL_NAMES_LOG = '/mnt/vdb/data/original_names.log'
 
 # Log settings.
