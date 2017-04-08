@@ -6,7 +6,7 @@ setup(
     version='1.0',
     packages=find_packages(),
     long_description=open('README.md').read(),
-    install_requires=['logbook', 'guessit', 'acdcli'],
+    install_requires=['logbook', 'guessit', 'acdcli', 'showsformatter'],
     entry_points={
       'console_scripts': [
           'amazonuploader = amazonuploader:main',
