@@ -17,7 +17,7 @@ DEFAULT_LANGUAGE_EXTENSION = '.en'
 SUBTITLES_EXTENSIONS = ['.srt']
 LANGUAGE_EXTENSIONS = ['.he', '.en']
 
-EXTENSIONS_WHITE_LIST = ['.srt', '.mkv', '.avi', '.mp4', '.mov', '.m4v', '.wmv', 'mpg']
+EXTENSIONS_WHITE_LIST = ['.srt', '.mkv', '.avi', '.mp4', '.mov', '.m4v', '.wmv', '.mpg']
 NAMES_BLACK_LIST = ['sample']
 
 logger = logbook.Logger('AmazonUploader')
