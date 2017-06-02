@@ -22,7 +22,7 @@ def _get_log_handlers():
     :return: A list of log handlers.
     """
     return [
-        logbook.StreamHandler(sys.stdout, level=logbook.DEBUG, bubble=True),
+        logbook.StreamHandler(sys.stdout, level=logbook.INFO, bubble=True),
         logbook.RotatingFileHandler(LOG_FILE_PATH, level=logbook.DEBUG, max_size=5 * 1024 * 1024, backup_count=1,
                                     bubble=True)
     ]
@@ -31,24 +31,28 @@ def _get_log_handlers():
 def handle_file(input_path):
     """
     Migrate file content.
+    
     :param input_path: The dir path to migrate.
+    :raises subprocess.CalledProcessError: If anything went wrong with one of the external processes.
     """
     logger.info('Handling file: {}'.format(input_path))
     is_synced = False
     # Sync with ODrive first, if needed.
     if input_path.endswith('.cloud'):
         logger.debug('Syncing file: {}'.format(input_path))
-        subprocess.call('{} sync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
+        subprocess.check_call('{} sync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
         input_path = input_path.rsplit('.cloud')[0]
         is_synced = True
     # Migrate with rclone!
     logger.debug('Copying file: {}'.format(input_path))
     gdrive_path = input_path.split(ACD_PREFIX)[1]
-    subprocess.call('{} copyto "{}" "GDrive:{}"'.format(RCLONE_CMD, input_path, gdrive_path), shell=True)
-    # Don't forget to unsync to save storage.
-    if is_synced:
-        logger.debug('Unsyncing file: {}'.format(input_path))
-        subprocess.call('{} unsync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
+    try:
+        subprocess.check_call('{} copyto "{}" "GDrive:{}"'.format(RCLONE_CMD, input_path, gdrive_path), shell=True)
+    finally:
+        # Don't forget to unsync to save storage.
+        if is_synced:
+            logger.debug('Unsyncing file: {}'.format(input_path))
+            subprocess.check_call('{} unsync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
 
 
 def handle_dir(input_path):
@@ -60,7 +64,10 @@ def handle_dir(input_path):
         logger.info('Handling dir: {}'.format(root))
         for f in files:
             file_path = os.path.join(root, f)
-            handle_file(file_path)
+            try:
+                handle_file(file_path)
+            except subprocess.CalledProcessError:
+                logger.error('Something went wrong with file: {}'.format(file_path))
 
 
 def main():
