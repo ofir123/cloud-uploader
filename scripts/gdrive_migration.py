@@ -6,6 +6,7 @@ import os
 import logbook
 
 LOG_FILE_PATH = '/var/log/gdrive_migration.log'
+ERRORS_LIST_PATH = '/var/log/gdrive_migration_errors.log'
 
 ACD_PREFIX = '/amazon/Amazon Cloud Drive/'
 
@@ -68,6 +69,7 @@ def handle_dir(input_path):
                 handle_file(file_path)
             except subprocess.CalledProcessError:
                 logger.error('Something went wrong with file: {}'.format(file_path))
+                open(ERRORS_LIST_PATH, 'w').write(file_path + '\n')
 
 
 def main():
