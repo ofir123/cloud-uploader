@@ -10,6 +10,8 @@ ERRORS_LIST_PATH = '/var/log/gdrive_migration_errors.log'
 
 ACD_PREFIX = '/amazon/Amazon Cloud Drive/'
 
+MAX_TRIES = 3
+
 ODRIVE_CMD = '/usr/bin/python /opt/odrive/odrive.py'
 RCLONE_CMD = '/usr/bin/rclone'
 
@@ -65,10 +67,19 @@ def handle_dir(input_path):
         logger.info('Handling dir: {}'.format(root))
         for f in files:
             file_path = os.path.join(root, f)
-            try:
-                handle_file(file_path)
-            except subprocess.CalledProcessError:
-                logger.error('Something went wrong with file: {}'.format(file_path))
+            tries = 0
+            is_failed = True
+            while tries < MAX_TRIES and is_failed:
+                if tries > 0:
+                    logger.info('Retrying file: {}'.format(file_path))
+                try:
+                    handle_file(file_path)
+                    is_failed = False
+                except subprocess.CalledProcessError:
+                    tries += 1
+                    logger.error('Something went wrong with file: {}'.format(file_path))
+            if is_failed:
+                logger.error('Max retries! Giving up on file: {}'.format(file_path))
                 open(ERRORS_LIST_PATH, 'w').write(file_path + '\n')
 
 
