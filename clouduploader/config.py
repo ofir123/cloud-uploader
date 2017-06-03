@@ -3,6 +3,7 @@ SHOULD_DELETE = True
 
 # rclone settings.
 RCLONE_PATH = '/usr/bin/rclone'
+RCLONE_CONFIG_PATH = '/mnt/vdb/rclone.conf'
 MAX_UPLOAD_TRIES = 3
 
 # encfs settings.
