@@ -1,7 +1,7 @@
 # Post-upload settings.
 SHOULD_DELETE = True
 
-# acd_cli settings.
+# rclone settings.
 RCLONE_PATH = '/usr/bin/rclone'
 MAX_UPLOAD_TRIES = 3
 
