@@ -8,9 +8,9 @@ import random
 
 import logbook
 
-from amazonuploader import config
+from clouduploader import config
 
-logger = logbook.Logger('AmazonUploader')
+logger = logbook.Logger('VideoUploader')
 
 
 def _get_log_handlers():
@@ -25,17 +25,6 @@ def _get_log_handlers():
         logbook.RotatingFileHandler(config.LOGFILE, level=logbook.DEBUG, max_size=5 * 1024 * 1024, backup_count=1,
                                     bubble=True)
     ]
-
-
-def _sync():
-    """
-    Perform sync action.
-    """
-    return_code = subprocess.call('{} sync'.format(config.ACD_CLI_PATH), shell=True)
-    if return_code != 0:
-        logger.error('Bad return code ({}) for sync'.format(return_code))
-    else:
-        logger.info('Sync succeeded!')
 
 
 def _encrypt(encrypted_dir, plain_dir):
@@ -62,13 +51,13 @@ def _encrypt(encrypted_dir, plain_dir):
     return True
 
 
-def upload_file(file_path):
+def upload_video(file_path):
     """
-    Upload the given file to the Amazon videos directory.
+    Upload the given file to the Google Drive videos directory.
 
     :param: file_path: The file to upload.
     """
-    logger.info('Uploading file: {}'.format(file_path))
+    logger.info('Uploading video: {}'.format(file_path))
     file_name = os.path.basename(file_path)
     logger.info('Cloud path: {}/{}'.format(config.CLOUD_VIDEO_PATH, file_name))
     # Create a temporary random cloud dir structure.
@@ -91,6 +80,7 @@ def upload_file(file_path):
             return
         # Upload the encrypted directory tree instead of the plain one.
         upload_base_dir = encrypted_base_dir
+    gdrive_dir = upload_base_dir.split(base_dir)[1].strip('/')
     logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
     os.makedirs(cloud_temp_path)
     if config.SHOULD_DELETE:
@@ -98,23 +88,19 @@ def upload_file(file_path):
     else:
         shutil.copy(file_path, cloud_temp_path)
     os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)), final_file_path)
-    # Sync first.
-    _sync()
     # Upload!
     upload_tries = 0
     return_code = 1
     while return_code != 0 and upload_tries < config.MAX_UPLOAD_TRIES:
         logger.info('Uploading file...')
         upload_tries += 1
-        return_code = subprocess.call('{} upload -o "{}" /'.format(config.ACD_CLI_PATH, upload_base_dir),
-                                      shell=True)
+        return_code = subprocess.call('{} copyto "{}" "GDrive:{}"'.format(
+            config.RCLONE_PATH, upload_base_dir, gdrive_dir), shell=True)
         # Check results.
         if return_code != 0:
             logger.error('Bad return code ({}) for file: {}'.format(return_code, file_name))
             if upload_tries < config.MAX_UPLOAD_TRIES:
                 logger.info('Trying again!')
-                # Sync in case the file was actually uploaded.
-                _sync()
             else:
                 logger.error('Max retries with no success! Skipping...')
     # If everything went smoothly, add the file name to the original names log.
@@ -135,18 +121,18 @@ def upload_file(file_path):
 
 def main():
     """
-    Upload the given file to its proper Amazon cloud directory.
+    Upload the given file to its proper Google Drive videos directory.
     """
     # Parse input arguments.
     if len(sys.argv) == 2:
         file_path = os.path.abspath(sys.argv[1])
         if os.path.isfile(file_path):
             with logbook.NestedSetup(_get_log_handlers()).applicationbound():
-                upload_file(file_path)
+                upload_video(file_path)
         else:
             print('Invalid file path given. Stopping!')
     else:
-        print('Usage: python3.5 uploader.py <FILE_PATH>')
+        print('Usage: python3 uploader.py <FILE_PATH>')
 
 
 if __name__ == '__main__':

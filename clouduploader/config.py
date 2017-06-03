@@ -2,7 +2,7 @@
 SHOULD_DELETE = True
 
 # acd_cli settings.
-ACD_CLI_PATH = '/usr/bin/acd_cli'
+RCLONE_PATH = '/usr/bin/rclone'
 MAX_UPLOAD_TRIES = 3
 
 # encfs settings.
@@ -22,4 +22,4 @@ CLOUD_VIDEO_PATH = 'Videos'
 ORIGINAL_NAMES_LOG = '/mnt/vdb/data/original_names.log'
 
 # Log settings.
-LOGFILE = '/var/log/amazon_uploader.log'
+LOGFILE = '/var/log/cloud_uploader.log'

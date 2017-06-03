@@ -2,14 +2,14 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='amazonuploader',
+    name='clouduploader',
     version='1.0',
     packages=find_packages(),
     long_description=open('README.md').read(),
-    install_requires=['logbook', 'guessit', 'acdcli', 'showsformatter'],
+    install_requires=['logbook', 'guessit', 'showsformatter'],
     entry_points={
       'console_scripts': [
-          'amazonuploader = amazonuploader:main',
+          'clouduploader = clouduploader:main',
       ]
     }
 )
