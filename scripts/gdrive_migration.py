@@ -65,6 +65,8 @@ def handle_file(input_path):
             os.remove(final_path)
         elif os.path.isdir(final_path):
             os.rmdir(final_path)
+        # Still raising to enable retry.
+        raise
     finally:
         # Don't forget to unsync to save storage.
         if is_synced:
