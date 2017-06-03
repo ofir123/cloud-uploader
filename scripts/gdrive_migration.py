@@ -9,6 +9,7 @@ LOG_FILE_PATH = '/var/log/gdrive_migration.log'
 ERRORS_LIST_PATH = '/var/log/gdrive_migration_errors.log'
 
 ACD_PREFIX = '/amazon/Amazon Cloud Drive/'
+GDRIVE_PREFIX = '/gdrive'
 
 MAX_TRIES = 3
 
@@ -33,12 +34,17 @@ def _get_log_handlers():
 
 def handle_file(input_path):
     """
-    Migrate file content.
+    Migrate file content (if not already migrated).
     
     :param input_path: The dir path to migrate.
     :raises subprocess.CalledProcessError: If anything went wrong with one of the external processes.
     """
     logger.info('Handling file: {}'.format(input_path))
+    # Check if file was already migrated.
+    final_path = os.path.join(GDRIVE_PREFIX, input_path.rsplit('.cloud')[0].split(ACD_PREFIX)[1])
+    if os.path.isfile(final_path):
+        logger.info('File already exists: {}'.format(input_path))
+        return
     is_synced = False
     # Sync with ODrive first, if needed.
     if input_path.endswith('.cloud'):
