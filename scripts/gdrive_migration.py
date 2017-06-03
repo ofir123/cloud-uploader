@@ -52,6 +52,8 @@ def handle_file(input_path):
         subprocess.check_call('{} sync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
         input_path = input_path.rsplit('.cloud')[0]
         is_synced = True
+    if not os.path.isfile(input_path):
+        raise IOError('File not found: {}'.format(input_path))
     # Migrate with rclone!
     logger.debug('Copying file: {}'.format(input_path))
     gdrive_path = input_path.split(ACD_PREFIX)[1]
@@ -87,7 +89,7 @@ def handle_dir(input_path):
                 try:
                     handle_file(file_path)
                     is_failed = False
-                except subprocess.CalledProcessError:
+                except (IOError, subprocess.CalledProcessError):
                     tries += 1
                     logger.error('Something went wrong with file: {}'.format(file_path))
             if is_failed:
