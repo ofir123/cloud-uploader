@@ -57,6 +57,10 @@ def handle_file(input_path):
     gdrive_path = input_path.split(ACD_PREFIX)[1]
     try:
         subprocess.check_call('{} copyto "{}" "GDrive:{}"'.format(RCLONE_CMD, input_path, gdrive_path), shell=True)
+    except subprocess.CalledProcessError:
+        logger.error('GDrive copy failed. Deleting leftovers...')
+        if os.path.exists(final_path):
+            os.remove(final_path)
     finally:
         # Don't forget to unsync to save storage.
         if is_synced:
