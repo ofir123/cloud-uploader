@@ -13,8 +13,8 @@ from subliminal.cache import region
 from subliminal.cli import dirs, cache_file, MutexLock
 from subliminal.subtitle import get_subtitle_path
 
-from ..clouduploader import config
-from ..clouduploader.uploader import upload_file
+from clouduploader import config
+from clouduploader.uploader import upload_file
 
 # Directories settings.
 MEDIA_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
