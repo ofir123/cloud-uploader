@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import os
+import time
 
 import logbook
 
@@ -46,12 +47,17 @@ def handle_file(input_path):
         logger.info('File already exists: {}'.format(input_path))
         return
     is_synced = False
-    # Sync with ODrive first, if needed.
+    # Sync with ODrive first, if needed. This phase has to work, so we try indefinitely.
     if input_path.endswith('.cloud'):
-        logger.debug('Syncing file: {}'.format(input_path))
-        subprocess.check_call('{} sync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
-        input_path = input_path.rsplit('.cloud')[0]
-        is_synced = True
+        while not is_synced:
+            logger.debug('Syncing file: {}'.format(input_path))
+            try:
+                subprocess.check_call('{} sync "{}"'.format(ODRIVE_CMD, input_path), shell=True)
+                input_path = input_path.rsplit('.cloud')[0]
+                is_synced = True
+            except subprocess.CalledProcessError:
+                logger.error('Sync failed! Waiting for 3 seconds and trying again...')
+                time.sleep(3)
     if not os.path.isfile(input_path):
         raise IOError('File not found: {}'.format(input_path))
     # Migrate with rclone!
@@ -87,7 +93,8 @@ def handle_dir(input_path):
             is_failed = True
             while tries < MAX_TRIES and is_failed:
                 if tries > 0:
-                    logger.info('Retrying file: {}'.format(file_path))
+                    logger.info('Waiting for 3 seconds and retrying file: {}'.format(file_path))
+                    time.sleep(3)
                 try:
                     handle_file(file_path)
                     is_failed = False
