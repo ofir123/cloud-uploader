@@ -29,22 +29,19 @@ def _get_log_handlers():
 
 def main():
     """
-    Go over the entire media collection, and check for weird files.
+    Go over the entire TV collection, and create fake files in a writable directory, so Sonarr would scan them.
     """
     with logbook.NestedSetup(_get_log_handlers()).applicationbound():
         logger.info('Sonarr faker started!')
         # Verify root path.
         if not os.path.isdir(TV_ROOT_PATH):
             raise FileNotFoundError('Couldn\'t find TV root directory! Stopping...')
-        # Create destination path.
-        if not os.path.exists(FAKE_ROOT_PATH):
-            os.makedirs(FAKE_ROOT_PATH)
         # Start working!
         for root, dirs, files in os.walk(TV_ROOT_PATH):
             logger.info('Handling dir: {}'.format(root))
             # Create a fake directory.
             fake_root = root.replace(TV_ROOT_PATH, FAKE_ROOT_PATH)
-            os.makedirs(fake_root)
+            os.makedirs(fake_root, exist_ok=True)
             for f in files:
                 # Create a fake file.
                 fake_path = os.path.join(fake_root, f)
