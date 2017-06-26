@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 import os
 import sys
+import shutil
 from pathlib import Path
 
 import logbook
@@ -36,6 +37,9 @@ def main():
         # Verify root path.
         if not os.path.isdir(TV_ROOT_PATH):
             raise FileNotFoundError('Couldn\'t find TV root directory! Stopping...')
+        # Delete previous fake directory.
+        if os.path.isdir(FAKE_ROOT_PATH):
+            shutil.rmtree(FAKE_ROOT_PATH)
         # Start working!
         for root, dirs, files in os.walk(TV_ROOT_PATH):
             logger.info('Handling dir: {}'.format(root))
