@@ -7,12 +7,9 @@ import time
 import logbook
 
 LOG_FILE_PATH = '/var/log/gdrive_migration.log'
-ERRORS_LIST_PATH = '/var/log/gdrive_migration_errors.log'
 
 ACD_PREFIX = '/amazon/Amazon Cloud Drive/'
 GDRIVE_PREFIX = '/gdrive'
-
-MAX_TRIES = 3
 
 ODRIVE_CMD = '/usr/bin/python /opt/odrive/odrive.py'
 RCLONE_CMD = '/usr/bin/rclone'
@@ -89,21 +86,15 @@ def handle_dir(input_path):
         logger.info('Handling dir: {}'.format(root))
         for f in files:
             file_path = os.path.join(root, f)
-            tries = 0
-            is_failed = True
-            while tries < MAX_TRIES and is_failed:
-                if tries > 0:
-                    logger.info('Waiting for 3 seconds and retrying file: {}'.format(file_path))
-                    time.sleep(3)
+            is_synced = False
+            while not is_synced:
                 try:
                     handle_file(file_path)
-                    is_failed = False
+                    is_synced = True
                 except (IOError, subprocess.CalledProcessError):
-                    tries += 1
                     logger.error('Something went wrong with file: {}'.format(file_path))
-            if is_failed:
-                logger.error('Max retries! Giving up on file: {}'.format(file_path))
-                open(ERRORS_LIST_PATH, 'w').write(file_path + '\n')
+                    logger.info('Waiting for 3 seconds and retrying file: {}'.format(file_path))
+                    time.sleep(3)
 
 
 def main():
