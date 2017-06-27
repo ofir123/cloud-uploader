@@ -38,7 +38,9 @@ def main():
         if not os.path.isdir(TV_ROOT_PATH):
             raise FileNotFoundError('Couldn\'t find TV root directory! Stopping...')
         # Delete previous fake directory.
-        if os.path.isdir(FAKE_ROOT_PATH):
+        should_delete = len(sys.argv) == 2 and sys.argv[1] == '-d'
+        if os.path.isdir(FAKE_ROOT_PATH) and should_delete:
+            logger.info('Deleting previous fake directory...')
             shutil.rmtree(FAKE_ROOT_PATH)
         # Start working!
         for root, dirs, files in os.walk(TV_ROOT_PATH):
