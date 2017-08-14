@@ -155,8 +155,12 @@ def main():
                     base_dir = os.path.join(MEDIA_ROOT_PATH, config.CLOUD_TV_PATH)
                     # Translate show title if possible.
                     title = format_show(title)
+                    if isinstance(episode, list):
+                        episode_str = 'E{:02d}-E{:02d}'.format(episode[0], episode[-1])
+                    else:
+                        episode_str = 'E{:02d}'.format(episode)
                     current_path = os.path.join(base_dir, title, 'Season {:02}'.format(
-                        season), '{} - S{:02}E{:02}{}'.format(title, season, episode, extension))
+                        season), '{} - S{:02}{}{}'.format(title, season, episode_str, extension))
                 else:
                     # Handle movies.
                     title = title.title()
