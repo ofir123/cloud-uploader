@@ -21,7 +21,7 @@ MEDIA_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
 TEMP_PATH = '/tmp'
 # A map between each language and its favorite subliminal providers (None for all providers).
 PROVIDERS_MAP = {
-    babelfish.Language('heb'): ['thewiz', 'subscenter'],
+    babelfish.Language('heb'): ['wizdom', 'subscenter'],
     babelfish.Language('eng'): None
 }
 
@@ -148,6 +148,8 @@ def main():
                 guess = guessit(original_path)
                 extension = os.path.splitext(original_path)[1]
                 title = guess.get('title')
+                if isinstance(title, list):
+                    title = title[0]
                 episode = guess.get('episode')
                 if episode:
                     # Handle TV episodes.
