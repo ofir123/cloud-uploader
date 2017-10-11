@@ -94,8 +94,9 @@ def refresh_plex_item(title, season=None, episodes=None):
                 else:
                     plex.library.section('Movies').get(title).refresh()
             except Exception:
+                episode_details = ' - Season {} Episodes {}'.format(season, ', '.join([str(e) for e in episodes]))
                 logger.exception('Failed to update item {}{}'.format(
-                    title, ' - Season {} Episodes {}'.format(season, ', '.join(episodes)) if is_episode else ''))
+                    title, episode_details if is_episode else ''))
 
 
 def find_file_subtitles(original_path, current_path, language):
