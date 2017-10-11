@@ -3,7 +3,9 @@ import datetime
 from collections import defaultdict
 import os
 import sys
+import time
 
+import requests
 import logbook
 import babelfish
 from guessit import guessit
@@ -12,9 +14,13 @@ import subliminal
 from subliminal.cache import region
 from subliminal.cli import dirs, cache_file, MutexLock
 from subliminal.subtitle import get_subtitle_path
+from plexapi.server import PlexServer
 
 from clouduploader import config
 from clouduploader.uploader import upload_file
+
+# Ignore SSL warnings.
+requests.packages.urllib3.disable_warnings()
 
 # Directories settings.
 MEDIA_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
@@ -26,7 +32,7 @@ PROVIDERS_MAP = {
 }
 
 # The monitor will look only at the latest X files (or all of them if RESULTS_LIMIT is None).
-RESULTS_LIMIT = 300
+RESULTS_LIMIT = 500
 
 SUBTITLES_EXTENSION = '.srt'
 LANGUAGE_EXTENSIONS = ['.he', '.en']
@@ -61,6 +67,35 @@ def configure_subtitles_cache():
     cache_file_path = os.path.join(cache_dir, cache_file)
     region.configure('dogpile.cache.dbm', expiration_time=datetime.timedelta(days=30),
                      arguments={'filename': cache_file_path, 'lock_factory': MutexLock})
+
+
+def refresh_plex_item(title, season=None, episodes=None):
+    """
+    Use the Plex API in order to refresh an item.
+
+    :param title: The item title.
+    :param season: The season number.
+    :param episodes: The episode numbers list.
+    """
+    logger.info('Updating Plex...')
+    is_episode = season is not None and episodes is not None
+    session = requests.Session()
+    # Ignore SSL errors.
+    session.verify = False
+    for base_url, token in config.PLEX_SERVERS:
+        with requests.Session() as session:
+            session.verify = False
+            try:
+                plex = PlexServer(base_url, token, session=session)
+                if is_episode:
+                    plex_season = plex.library.section('TV Shows').get(title).seasons()[season - 1].episodes()
+                    for episode in episodes:
+                        plex_season[episode - 1].refresh()
+                else:
+                    plex.library.section('Movies').get(title).refresh()
+            except Exception:
+                logger.exception('Failed to update item {}{}'.format(
+                    title, ' - Season {} Episodes {}'.format(season, ', '.join(episodes)) if is_episode else ''))
 
 
 def find_file_subtitles(original_path, current_path, language):
@@ -144,16 +179,20 @@ def main():
                     line = original_names_file.readline()
             logger.info('Searching for subtitles for the {} newest videos...'.format(RESULTS_LIMIT))
             for original_path in original_paths_list:
+                original_file_name = os.path.basename(original_path)
+                # Remove brackets group name prefix.
+                if original_file_name.startswith('[') and ']' in original_file_name:
+                    original_file_name = original_file_name.split(']', 1)[1]
                 # Create current path from original path.
-                guess = guessit(original_path)
-                extension = os.path.splitext(original_path)[1]
+                guess_title, extension = os.path.splitext(original_file_name)
+                guess = guessit(guess_title)
                 title = guess.get('title')
                 if isinstance(title, list):
                     title = title[0]
                 episode = guess.get('episode')
+                season = guess.get('season')
                 if episode:
                     # Handle TV episodes.
-                    season = guess.get('season')
                     base_dir = os.path.join(MEDIA_ROOT_PATH, config.CLOUD_TV_PATH)
                     # Translate show title if possible.
                     title = format_show(title)
@@ -161,7 +200,7 @@ def main():
                         episode_str = 'E{:02d}-E{:02d}'.format(episode[0], episode[-1])
                     else:
                         episode_str = 'E{:02d}'.format(episode)
-                    current_path = os.path.join(base_dir, title, 'Season {:02}'.format(
+                    current_path = os.path.join(base_dir, title.rstrip('.'), 'Season {:02}'.format(
                         season), '{} - S{:02}{}{}'.format(title, season, episode_str, extension))
                 else:
                     # Handle movies.
@@ -184,6 +223,11 @@ def main():
                         result_path = find_file_subtitles(original_path, current_path, language)
                         if result_path:
                             subtitles_map[language.alpha3] += 1
+                            if config.PLEX_SERVERS:
+                                    # Refresh Plex data (after waiting some time for the file to upload).
+                                    time.sleep(5)
+                                    refresh_plex_item(title, season,
+                                                      [episode] if not isinstance(episode, list) else episode)
                 else:
                     logger.info('Couldn\'t find: {}'.format(current_path))
             logger.info('All done! The results are: {}'.format(

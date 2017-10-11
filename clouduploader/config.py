@@ -24,3 +24,6 @@ ORIGINAL_NAMES_LOG = '/mnt/vdb/data/original_names.log'
 
 # Log settings.
 LOGFILE = '/var/log/cloud_uploader.log'
+
+# Plex servers (hosts and tokens).
+PLEX_SERVERS = []
