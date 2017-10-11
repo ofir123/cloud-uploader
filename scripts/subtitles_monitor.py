@@ -172,9 +172,9 @@ def main():
                 line = original_names_file.readline()
                 while line != '':
                     original_path = line.strip()
-                    original_paths_list.insert(0, original_path)
+                    original_paths_list.append(original_path)
                     if RESULTS_LIMIT and len(original_paths_list) > RESULTS_LIMIT:
-                        original_paths_list.pop()
+                        original_paths_list.pop(0)
                     # Fetch next line.
                     line = original_names_file.readline()
             logger.info('Searching for subtitles for the {} newest videos...'.format(RESULTS_LIMIT))
