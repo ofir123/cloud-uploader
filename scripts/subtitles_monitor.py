@@ -149,6 +149,8 @@ def find_file_subtitles(original_path, current_path, language):
     except ValueError:
         # Subliminal raises a ValueError if the given file is not a video file.
         logger.info('Not a video file. Moving on...')
+    except Exception:
+        logger.exception('Error in Subliminal. Moving on...')
 
 
 def main():
