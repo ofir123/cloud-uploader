@@ -131,7 +131,7 @@ def find_file_subtitles(original_path, current_path, language):
             if subtitles_result.content is None:
                 logger.debug('Skipping subtitle {}: no content'.format(subtitles_result))
             else:
-                subtitles_file_name = os.path.basename(get_subtitle_path(video.name, subtitles_result.language))
+                subtitles_file_name = os.path.basename(get_subtitle_path(current_path, subtitles_result.language))
                 subtitles_path = os.path.join(TEMP_PATH, subtitles_file_name)
                 logger.info('Saving {} to: {}'.format(subtitles_result, subtitles_path))
                 try:
