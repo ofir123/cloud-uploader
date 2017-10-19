@@ -113,7 +113,7 @@ def find_file_subtitles(original_path, current_path, language):
     try:
         subtitles_result = None
         # Get required video information.
-        video = subliminal.Video.fromguess(current_path, guessit(original_path))
+        video = subliminal.Video.fromguess(current_path, guessit(os.path.basename(original_path)))
         # Try using providers specified by the user.
         providers = PROVIDERS_MAP.get(language)
         current_result = subliminal.download_best_subtitles(
