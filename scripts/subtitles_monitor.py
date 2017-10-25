@@ -79,11 +79,9 @@ def refresh_plex_item(title, season=None, episodes=None):
     """
     logger.info('Updating Plex...')
     is_episode = season is not None and episodes is not None
-    session = requests.Session()
-    # Ignore SSL errors.
-    session.verify = False
     for base_url, token in config.PLEX_SERVERS:
         with requests.Session() as session:
+            # Ignore SSL errors.
             session.verify = False
             try:
                 plex = PlexServer(base_url, token, session=session)
@@ -194,6 +192,9 @@ def main():
                     title = title[0]
                 episode = guess.get('episode')
                 season = guess.get('season')
+                # Skip rare cases of weird episodes names.
+                if isinstance(season, list):
+                    continue
                 if episode:
                     # Handle TV episodes.
                     base_dir = os.path.join(MEDIA_ROOT_PATH, config.CLOUD_TV_PATH)
