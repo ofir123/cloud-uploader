@@ -32,7 +32,7 @@ PROVIDERS_MAP = {
 }
 
 # The monitor will look only at the latest X files (or all of them if RESULTS_LIMIT is None).
-RESULTS_LIMIT = 500
+RESULTS_LIMIT = 1000
 
 SUBTITLES_EXTENSION = '.srt'
 LANGUAGE_EXTENSIONS = ['.he', '.en']
