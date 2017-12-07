@@ -20,7 +20,7 @@ CLOUD_PLAIN_PATH = 'Media'
 CLOUD_TV_PATH = 'TV'
 CLOUD_MOVIE_PATH = 'Movies'
 CLOUD_VIDEO_PATH = 'Videos'
-ORIGINAL_NAMES_LOG = '/mnt/vdb/data/original_names.log'
+ORIGINAL_NAMES_LOG = '/mnt/vdb/original_names.log'
 
 # Log settings.
 LOGFILE = '/var/log/cloud_uploader.log'

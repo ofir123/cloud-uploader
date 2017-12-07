@@ -27,8 +27,15 @@ MEDIA_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
 TEMP_PATH = '/tmp'
 # A map between each language and its favorite subliminal providers (None for all providers).
 PROVIDERS_MAP = {
-    babelfish.Language('heb'): ['wizdom', 'subscenter'],
+    babelfish.Language('heb'): ['cinemast', 'wizdom'],
     babelfish.Language('eng'): None
+}
+# A map between each provider and its credentials.
+PROVIDER_CONFIGS = {
+    'cinemast': {
+        'username': 'subliminal@gmail.com',
+        'password': 'subliminal'
+    }
 }
 
 # The monitor will look only at the latest X files (or all of them if RESULTS_LIMIT is None).
@@ -115,7 +122,7 @@ def find_file_subtitles(original_path, current_path, language):
         # Try using providers specified by the user.
         providers = PROVIDERS_MAP.get(language)
         current_result = subliminal.download_best_subtitles(
-            {video}, languages={language}, providers=providers).values()
+            {video}, languages={language}, providers=providers, provider_configs=PROVIDER_CONFIGS).values()
         if current_result:
             current_result = list(current_result)[0]
             if current_result:
