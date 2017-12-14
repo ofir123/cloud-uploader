@@ -9,7 +9,6 @@ import requests
 import logbook
 import babelfish
 from guessit import guessit
-from showsformatter import format_show
 import subliminal
 from subliminal.cache import region
 from subliminal.cli import dirs, cache_file, MutexLock
@@ -17,7 +16,7 @@ from subliminal.subtitle import get_subtitle_path
 from plexapi.server import PlexServer
 
 from clouduploader import config
-from clouduploader.uploader import upload_file
+from clouduploader.uploader import upload_file, get_file_path_details
 
 # Ignore SSL warnings.
 requests.packages.urllib3.disable_warnings()
@@ -117,8 +116,9 @@ def find_file_subtitles(original_path, current_path, language):
     logger.info('Searching {} subtitles for file: {}'.format(language.alpha3, original_path))
     try:
         subtitles_result = None
+        original_file_name = os.path.basename(original_path)
         # Get required video information.
-        video = subliminal.Video.fromguess(current_path, guessit(os.path.basename(original_path)))
+        video = subliminal.Video.fromguess(current_path, guessit(original_file_name))
         # Try using providers specified by the user.
         providers = PROVIDERS_MAP.get(language)
         current_result = subliminal.download_best_subtitles(
@@ -136,7 +136,7 @@ def find_file_subtitles(original_path, current_path, language):
             if subtitles_result.content is None:
                 logger.debug('Skipping subtitle {}: no content'.format(subtitles_result))
             else:
-                subtitles_file_name = os.path.basename(get_subtitle_path(current_path, subtitles_result.language))
+                subtitles_file_name = get_subtitle_path(original_file_name, subtitles_result.language)
                 subtitles_path = os.path.join(TEMP_PATH, subtitles_file_name)
                 logger.info('Saving {} to: {}'.format(subtitles_result, subtitles_path))
                 try:
@@ -187,40 +187,12 @@ def main():
                     line = original_names_file.readline()
             logger.info('Searching for subtitles for the {} newest videos...'.format(RESULTS_LIMIT))
             for original_path in original_paths_list:
-                season = episode = current_path = None
-                original_file_name = os.path.basename(original_path)
-                # Remove brackets group name prefix.
-                if original_file_name.startswith('[') and ']' in original_file_name:
-                    original_file_name = original_file_name.split(']', 1)[1]
-                # Create current path from original path.
-                guess_title, extension = os.path.splitext(original_file_name)
-                guess = guessit(original_file_name)
-                video_type = guess.get('type')
-                title = guess.get('title')
-                if isinstance(title, list):
-                    title = title[0]
-                if video_type == 'episode' and title:
-                    # Handle TV episodes.
-                    base_dir = os.path.join(MEDIA_ROOT_PATH, config.CLOUD_TV_PATH)
-                    # Translate show title if possible.
-                    title = format_show(title)
-                    season = guess.get('season')
-                    # Skip rare cases of weird episodes names.
-                    if season and not isinstance(season, list):
-                        episode = guess.get('episode')
-                        if isinstance(episode, list):
-                            episode_str = 'E{:02d}-E{:02d}'.format(episode[0], episode[-1])
-                        else:
-                            episode_str = 'E{:02d}'.format(episode)
-                        current_path = os.path.join(base_dir, title.rstrip('.'), 'Season {:02}'.format(
-                            season), '{} - S{:02}{}{}'.format(title, season, episode_str, extension))
-                elif video_type == 'movie' and title:
-                    # Handle movies.
-                    title = title.title()
-                    year = guess.get('year')
-                    base_dir = os.path.join(MEDIA_ROOT_PATH, config.CLOUD_MOVIE_PATH)
-                    current_path = os.path.join(base_dir, '{} ({})'.format(title, year), '{} ({}){}'.format(
-                        title, year, extension))
+                video_type, parent_dir, guessed_file_name = get_file_path_details(original_path)
+                if not (parent_dir and guessed_file_name):
+                    continue
+                current_path = os.path.join(
+                    MEDIA_ROOT_PATH, config.CLOUD_TV_PATH if video_type == 'episode' else config.CLOUD_MOVIE_PATH,
+                    parent_dir, '{}{}'.format(guessed_file_name, os.path.splitext(original_path)[1]))
                 # Check actual video file.
                 if current_path and os.path.isfile(current_path):
                     logger.info('Checking subtitles for: {}'.format(current_path))
@@ -238,7 +210,10 @@ def main():
                             if config.PLEX_SERVERS:
                                 # Refresh Plex data (after waiting some time for the file to upload).
                                 time.sleep(5)
-                                refresh_plex_item(title, season,
+                                # Guess video details after name parsing.
+                                guess_results = guessit(guessed_file_name)
+                                episode = guess_results.get('episode')
+                                refresh_plex_item(guess_results.get('title'), guess_results.get('season'),
                                                   [episode] if not isinstance(episode, list) else episode)
                 else:
                     logger.info('Couldn\'t find: {}'.format(current_path))

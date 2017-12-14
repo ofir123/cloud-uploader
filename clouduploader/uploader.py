@@ -61,6 +61,50 @@ def _encrypt(encrypted_dir, plain_dir):
     return True
 
 
+def get_file_path_details(file_path):
+    """
+    Create a tuple of video type, parent dir and guessed file name, based on the given file path.
+
+    :param file_path: The file path to create a tuple for.
+    :return: The tuple - (video_type, parent_dir_name, guessed_file_name).
+    """
+    parent_dir = guessed_file_name = None
+    file_name = os.path.basename(file_path)
+    # Remove brackets group name prefix.
+    if file_name.startswith('[') and ']' in file_name:
+        file_name = file_name.split(']', 1)[1]
+    # Start guessing!
+    guess_results = guessit(file_name)
+    video_type = guess_results.get('type')
+    title = guess_results.get('title')
+    if isinstance(title, list):
+        title = title[0]
+    if video_type == 'episode' and title:
+        # Translate show title if needed.
+        title = format_show(title)
+        season = guess_results.get('season')
+        # Skip rare cases of weird episodes names.
+        if season and not isinstance(season, list):
+            episode = guess_results.get('episode')
+            if episode:
+                # Dirs that end with . are evil!
+                fixed_dir_name = title.rstrip('.')
+                parent_dir = os.path.join(fixed_dir_name, 'Season {:02d}'.format(season))
+                if isinstance(episode, list):
+                    episode_str = 'E{:02d}-E{:02d}'.format(episode[0], episode[-1])
+                else:
+                    episode_str = 'E{:02d}'.format(episode)
+                guessed_file_name = '{} - S{:02d}{}'.format(title, season, episode_str)
+    elif video_type == 'movie' and title:
+        # Make sure every word starts with a capital letter.
+        title = title.title()
+        year = guess_results.get('year')
+        if year:
+            parent_dir = '{} ({})'.format(title, year)
+            guessed_file_name = '{} ({})'.format(title, year)
+    return video_type, parent_dir, guessed_file_name
+
+
 def upload_file(file_path):
     """
     Upload the given file to its proper Google Drive cloud directory.
@@ -96,41 +140,10 @@ def upload_file(file_path):
                 language_extension = DEFAULT_LANGUAGE_EXTENSION
                 fixed_file_path = file_name + DEFAULT_VIDEO_EXTENSION
     # Create cloud path based on guessit results.
-    cloud_dir = None
-    cloud_file = None
-    fixed_file_name = os.path.basename(fixed_file_path)
-    # Remove brackets group name prefix.
-    if fixed_file_name.startswith('[') and ']' in fixed_file_name:
-        fixed_file_name = fixed_file_name.split(']', 1)[1]
-    # Start guessing!
-    guess_results = guessit(fixed_file_name)
-    video_type = guess_results.get('type')
-    title = guess_results.get('title')
-    if isinstance(title, list):
-        title = title[0]
-    if video_type == 'episode' and title:
-        # Translate show title if needed.
-        title = format_show(title)
-        season = guess_results.get('season')
-        if season:
-            episode = guess_results.get('episode')
-            if episode:
-                # Dirs that end with . are evil!
-                fixed_dir_name = title.rstrip('.')
-                cloud_dir = '{}/{}/Season {:02d}'.format(config.CLOUD_TV_PATH, fixed_dir_name, season)
-                if isinstance(episode, list):
-                    episode_str = 'E{:02d}-E{:02d}'.format(episode[0], episode[-1])
-                else:
-                    episode_str = 'E{:02d}'.format(episode)
-                cloud_file = '{} - S{:02d}{}'.format(title, season, episode_str)
-    elif video_type == 'movie' and title:
-        # Make sure every word starts with a capital letter.
-        title = title.title()
-        year = guess_results.get('year')
-        if year:
-            cloud_dir = '{}/{} ({})'.format(config.CLOUD_MOVIE_PATH, title, year)
-            cloud_file = '{} ({})'.format(title, year)
-    if cloud_dir and cloud_file:
+    video_type, parent_dir, cloud_file = get_file_path_details(fixed_file_path)
+    if parent_dir and cloud_file:
+        cloud_dir = os.path.join(config.CLOUD_TV_PATH if video_type == 'episode' else config.CLOUD_MOVIE_PATH,
+                                 parent_dir)
         if language_extension:
             cloud_file += language_extension
         cloud_file += file_extension
@@ -155,7 +168,7 @@ def upload_file(file_path):
                 return
             # Upload the encrypted directory tree instead of the plain one.
             upload_base_dir = encrypted_base_dir
-        gdrive_dir = upload_base_dir.split(base_dir)[1].strip('/')
+        gdrive_dir = upload_base_dir.split(base_dir)[1].strip(os.path.sep)
         logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
         os.makedirs(cloud_temp_path)
         if config.SHOULD_DELETE:
