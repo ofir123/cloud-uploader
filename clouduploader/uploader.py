@@ -76,6 +76,9 @@ def get_file_path_details(file_path):
     # Start guessing!
     guess_results = guessit(file_name)
     video_type = guess_results.get('type')
+    video_details = {
+        'type': video_type
+    }
     title = guess_results.get('title')
     if isinstance(title, list):
         title = title[0]
@@ -95,6 +98,8 @@ def get_file_path_details(file_path):
                 else:
                     episode_str = 'E{:02d}'.format(episode)
                 guessed_file_name = '{} - S{:02d}{}'.format(title, season, episode_str)
+                video_details['season'] = season
+                video_details['episode'] = episode
     elif video_type == 'movie' and title:
         # Make sure every word starts with a capital letter.
         title = title.title()
@@ -102,7 +107,9 @@ def get_file_path_details(file_path):
         if year:
             parent_dir = '{} ({})'.format(title, year)
             guessed_file_name = '{} ({})'.format(title, year)
-    return video_type, parent_dir, guessed_file_name
+            video_details['year'] = year
+    video_details['title'] = title
+    return video_details, parent_dir, guessed_file_name
 
 
 def upload_file(file_path):
@@ -140,10 +147,10 @@ def upload_file(file_path):
                 language_extension = DEFAULT_LANGUAGE_EXTENSION
                 fixed_file_path = file_name + DEFAULT_VIDEO_EXTENSION
     # Create cloud path based on guessit results.
-    video_type, parent_dir, cloud_file = get_file_path_details(fixed_file_path)
+    video_details, parent_dir, cloud_file = get_file_path_details(fixed_file_path)
     if parent_dir and cloud_file:
-        cloud_dir = os.path.join(config.CLOUD_TV_PATH if video_type == 'episode' else config.CLOUD_MOVIE_PATH,
-                                 parent_dir)
+        cloud_dir = os.path.join(
+            config.CLOUD_TV_PATH if video_details['type'] == 'episode' else config.CLOUD_MOVIE_PATH, parent_dir)
         if language_extension:
             cloud_file += language_extension
         cloud_file += file_extension

@@ -187,12 +187,14 @@ def main():
                     line = original_names_file.readline()
             logger.info('Searching for subtitles for the {} newest videos...'.format(RESULTS_LIMIT))
             for original_path in original_paths_list:
-                video_type, parent_dir, guessed_file_name = get_file_path_details(original_path)
+                video_details, parent_dir, guessed_file_name = get_file_path_details(original_path)
                 if not (parent_dir and guessed_file_name):
                     continue
-                current_path = os.path.join(
-                    MEDIA_ROOT_PATH, config.CLOUD_TV_PATH if video_type == 'episode' else config.CLOUD_MOVIE_PATH,
-                    parent_dir, '{}{}'.format(guessed_file_name, os.path.splitext(original_path)[1]))
+                base_dir = os.path.join(
+                    MEDIA_ROOT_PATH, config.CLOUD_TV_PATH if video_details['type'] == 'episode' else
+                    config.CLOUD_MOVIE_PATH)
+                current_path = os.path.join(base_dir, parent_dir,
+                                            '{}{}'.format(guessed_file_name, os.path.splitext(original_path)[1]))
                 # Check actual video file.
                 if current_path and os.path.isfile(current_path):
                     logger.info('Checking subtitles for: {}'.format(current_path))
@@ -210,10 +212,8 @@ def main():
                             if config.PLEX_SERVERS:
                                 # Refresh Plex data (after waiting some time for the file to upload).
                                 time.sleep(5)
-                                # Guess video details after name parsing.
-                                guess_results = guessit(guessed_file_name)
-                                episode = guess_results.get('episode')
-                                refresh_plex_item(guess_results.get('title'), guess_results.get('season'),
+                                episode = video_details.get('episode')
+                                refresh_plex_item(video_details['title'], video_details.get('season'),
                                                   [episode] if not isinstance(episode, list) else episode)
                 else:
                     logger.info('Couldn\'t find: {}'.format(current_path))
