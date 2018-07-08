@@ -20,7 +20,6 @@ def _get_log_handlers():
     :return: A list of log handlers.
     """
     return [
-        logbook.NullHandler(),
         logbook.StreamHandler(sys.stdout, level=logbook.DEBUG, bubble=True),
         logbook.RotatingFileHandler(config.LOGFILE, level=logbook.DEBUG, max_size=5 * 1024 * 1024, backup_count=1,
                                     bubble=True)
@@ -59,14 +58,14 @@ def upload_video(file_path):
     """
     logger.info('Uploading video: {}'.format(file_path))
     file_name = os.path.basename(file_path)
-    logger.info('Cloud path: {}/{}'.format(config.CLOUD_VIDEO_PATH, file_name))
+    logger.info('Cloud path: {}/{}'.format(config.CLOUD_VIDEOS_PATH, file_name))
     # Create a temporary random cloud dir structure.
     original_dir = os.path.dirname(file_path)
     random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
     base_dir = os.path.join(original_dir, random_dir_name)
     plain_base_dir = os.path.join(base_dir, config.CLOUD_PLAIN_PATH)
     os.makedirs(plain_base_dir)
-    cloud_temp_path = os.path.join(plain_base_dir, config.CLOUD_VIDEO_PATH)
+    cloud_temp_path = os.path.join(plain_base_dir, config.CLOUD_VIDEOS_PATH)
     final_file_path = os.path.join(cloud_temp_path, file_name)
     # Use the plain directory when uploading, unless encryption is enabled.
     upload_base_dir = plain_base_dir

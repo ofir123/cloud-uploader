@@ -18,8 +18,9 @@ ENCFS_PASSWORD = 'Password1'
 CLOUD_ENCRYPTED_PATH = 'Encrypted'
 CLOUD_PLAIN_PATH = 'Media'
 CLOUD_TV_PATH = 'TV'
-CLOUD_MOVIE_PATH = 'Movies'
-CLOUD_VIDEO_PATH = 'Videos'
+CLOUD_MOVIES_PATH = 'Movies'
+CLOUD_UFC_PATH = 'UFC'
+CLOUD_VIDEOS_PATH = 'Videos'
 ORIGINAL_NAMES_LOG = '/mnt/vdb/original_names.log'
 
 # Log settings.

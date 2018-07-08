@@ -192,7 +192,7 @@ def main():
                     continue
                 base_dir = os.path.join(
                     MEDIA_ROOT_PATH, config.CLOUD_TV_PATH if video_details['type'] == 'episode' else
-                    config.CLOUD_MOVIE_PATH)
+                    config.CLOUD_MOVIES_PATH)
                 current_path = os.path.join(base_dir, parent_dir,
                                             '{}{}'.format(guessed_file_name, os.path.splitext(original_path)[1]))
                 # Check actual video file.

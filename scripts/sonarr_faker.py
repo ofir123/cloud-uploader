@@ -21,7 +21,6 @@ def _get_log_handlers():
     :return: A list of log handlers.
     """
     return [
-        logbook.NullHandler(),
         logbook.StreamHandler(sys.stdout, level=logbook.INFO, bubble=True),
         logbook.RotatingFileHandler(LOG_FILE_PATH, level=logbook.DEBUG, max_size=5 * 1024 * 1024, backup_count=1,
                                     bubble=True)
