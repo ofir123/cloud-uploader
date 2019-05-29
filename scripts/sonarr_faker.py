@@ -1,14 +1,14 @@
 #!/usr/local/bin/python3
 import os
-import sys
-import shutil
 from pathlib import Path
+import shutil
+import sys
 
 import logbook
 
 # Directories settings.
-TV_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted/TV'
-FAKE_ROOT_PATH = '/mnt/vdb/fake/TV'
+GDRIVE_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
+FAKE_ROOT_PATH = '/mnt/vdb/fake'
 LOG_FILE_PATH = '/var/log/sonarr_faker.log'
 
 logger = logbook.Logger(__name__)
@@ -34,23 +34,27 @@ def main():
     with logbook.NestedSetup(_get_log_handlers()).applicationbound():
         logger.info('Sonarr faker started!')
         # Verify root path.
-        if not os.path.isdir(TV_ROOT_PATH):
-            raise FileNotFoundError('Couldn\'t find TV root directory! Stopping...')
+        if not os.path.isdir(GDRIVE_ROOT_PATH):
+            raise FileNotFoundError('Couldn\'t find GDrive root directory! Stopping...')
+
         # Delete previous fake directory.
         should_delete = len(sys.argv) == 2 and sys.argv[1] == '-d'
         if os.path.isdir(FAKE_ROOT_PATH) and should_delete:
             logger.info('Deleting previous fake directory...')
             shutil.rmtree(FAKE_ROOT_PATH)
+
         # Start working!
-        for root, dirs, files in os.walk(TV_ROOT_PATH):
-            logger.info('Handling dir: {}'.format(root))
+        for root, dirs, files in os.walk(GDRIVE_ROOT_PATH):
+            logger.info(f'Handling dir: {root}')
             # Create a fake directory.
-            fake_root = root.replace(TV_ROOT_PATH, FAKE_ROOT_PATH)
+            fake_root = root.replace(GDRIVE_ROOT_PATH, FAKE_ROOT_PATH)
             os.makedirs(fake_root, exist_ok=True)
+
             for f in files:
                 # Create a fake file.
                 fake_path = os.path.join(fake_root, f)
                 Path(fake_path).touch()
+
         logger.info('All done!')
 
 

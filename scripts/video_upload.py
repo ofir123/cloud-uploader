@@ -1,10 +1,10 @@
 #!/usr/local/bin/python3
 import os
+import random
 import shutil
+import string
 import subprocess
 import sys
-import string
-import random
 
 import logbook
 
@@ -35,18 +35,22 @@ def _encrypt(encrypted_dir, plain_dir):
     :return: True if succeeded, and False otherwise.
     """
     logger.info('Encrypting directory tree...')
+
     # Verify config environment variable first.
     if not os.environ.get(config.ENCFS_ENVIRONMENT_VARIABLE):
-        logger.info('{} environment variable is not defined. Defining: {}'.format(
-            config.ENCFS_ENVIRONMENT_VARIABLE, config.ENCFS_CONFIG_PATH))
+        logger.info(f'{config.ENCFS_ENVIRONMENT_VARIABLE} environment variable is not defined. '
+                    f'Defining: {config.ENCFS_CONFIG_PATH}')
         os.environ[config.ENCFS_ENVIRONMENT_VARIABLE] = config.ENCFS_CONFIG_PATH
+
     # Encrypt!
     os.makedirs(encrypted_dir)
-    return_code = subprocess.call('echo {} | {} -S "{}" "{}"'.format(
-        config.ENCFS_PASSWORD, config.ENCFS_PATH, encrypted_dir, plain_dir), shell=True)
+    return_code = subprocess.call(
+        f'echo {config.ENCFS_PASSWORD} | {config.ENCFS_PATH} -S "{encrypted_dir}" "{plain_dir}"', shell=True)
+
     if return_code != 0:
-        logger.error('Bad return code ({}) for encryption. Stopping!'.format(return_code))
+        logger.error(f'Bad return code ({return_code}) for encryption. Stopping!')
         return False
+
     return True
 
 
@@ -56,9 +60,10 @@ def upload_video(file_path):
 
     :param: file_path: The file to upload.
     """
-    logger.info('Uploading video: {}'.format(file_path))
+    logger.info(f'Uploading video: {file_path}')
     file_name = os.path.basename(file_path)
-    logger.info('Cloud path: {}/{}'.format(config.CLOUD_VIDEOS_PATH, file_name))
+    logger.info(f'Cloud path: {config.CLOUD_VIDEOS_PATH}/{file_name}')
+
     # Create a temporary random cloud dir structure.
     original_dir = os.path.dirname(file_path)
     random_dir_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
@@ -67,6 +72,7 @@ def upload_video(file_path):
     os.makedirs(plain_base_dir)
     cloud_temp_path = os.path.join(plain_base_dir, config.CLOUD_VIDEOS_PATH)
     final_file_path = os.path.join(cloud_temp_path, file_name)
+
     # Use the plain directory when uploading, unless encryption is enabled.
     upload_base_dir = plain_base_dir
     # Set up encryption if needed.
@@ -79,29 +85,32 @@ def upload_video(file_path):
             return
         # Upload the encrypted directory tree instead of the plain one.
         upload_base_dir = encrypted_base_dir
+
     gdrive_dir = upload_base_dir.split(base_dir)[1].strip('/')
-    logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
+    logger.info(f'Moving file to temporary path: {cloud_temp_path}')
     os.makedirs(cloud_temp_path)
     if config.SHOULD_DELETE:
         shutil.move(file_path, cloud_temp_path)
     else:
         shutil.copy(file_path, cloud_temp_path)
     os.rename(os.path.join(cloud_temp_path, os.path.basename(file_path)), final_file_path)
+
     # Upload!
     upload_tries = 0
     return_code = 1
     while return_code != 0 and upload_tries < config.MAX_UPLOAD_TRIES:
         logger.info('Uploading file...')
         upload_tries += 1
-        return_code = subprocess.call('{} --config {} copyto "{}" "GDrive:{}"'.format(
-            config.RCLONE_PATH, config.RCLONE_CONFIG_PATH, upload_base_dir, gdrive_dir), shell=True)
+        return_code = subprocess.call(f'{config.RCLONE_PATH} --config {config.RCLONE_CONFIG_PATH} copyto '
+                                      f'"{upload_base_dir}" "GDrive:{gdrive_dir}"', shell=True)
         # Check results.
         if return_code != 0:
-            logger.error('Bad return code ({}) for file: {}'.format(return_code, file_name))
+            logger.error(f'Bad return code ({return_code}) for file: {file_name}')
             if upload_tries < config.MAX_UPLOAD_TRIES:
                 logger.info('Trying again!')
             else:
                 logger.error('Max retries with no success! Skipping...')
+
     # If everything went smoothly, add the file name to the original names log.
     if return_code == 0:
         logger.info('Upload succeeded! Deleting original file...')
@@ -111,9 +120,11 @@ def upload_video(file_path):
         if config.SHOULD_DELETE:
             shutil.move(final_file_path, original_dir)
             os.rename(os.path.join(original_dir, file_name), file_path)
+
     # Unmount ENCFS directory.
     if config.SHOULD_ENCRYPT:
-        subprocess.call('{} -u "{}"'.format(config.FUSERMOUNT_PATH, plain_base_dir), shell=True)
+        subprocess.call(f'{config.FUSERMOUNT_PATH} -u "{plain_base_dir}"', shell=True)
+
     # Delete all temporary directories.
     shutil.rmtree(base_dir)
 

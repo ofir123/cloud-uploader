@@ -1,22 +1,21 @@
 #!/usr/local/bin/python3
-import datetime
 from collections import defaultdict
+import datetime
 import os
 import sys
 import time
 
-import requests
-import logbook
 import babelfish
 from guessit import guessit
+import logbook
+from plexapi.server import PlexServer
+import requests
 import subliminal
 from subliminal.cache import region
-from subliminal.cli import dirs, cache_file, MutexLock
 from subliminal.subtitle import get_subtitle_path
-from plexapi.server import PlexServer
 
 from clouduploader import config
-from clouduploader.uploader import upload_file, get_file_path_details
+from clouduploader.uploader import guess_path, upload_file
 
 # Ignore SSL warnings.
 requests.packages.urllib3.disable_warnings()
@@ -66,13 +65,7 @@ def configure_subtitles_cache():
     Configure the subliminal cache settings.
     Should be called once when the program starts.
     """
-    # Configure the subliminal cache.
-    cache_dir = dirs.user_cache_dir
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
-    cache_file_path = os.path.join(cache_dir, cache_file)
-    region.configure('dogpile.cache.dbm', expiration_time=datetime.timedelta(days=30),
-                     arguments={'filename': cache_file_path, 'lock_factory': MutexLock})
+    region.configure('dogpile.cache.memory', expiration_time=datetime.timedelta(days=7))
 
 
 def refresh_plex_item(title, season=None, episodes=None):
@@ -134,21 +127,21 @@ def find_file_subtitles(original_path, current_path, language):
             logger.info('Subtitles found! Saving files...')
             # Save subtitles alongside the video file (if they're not empty).
             if subtitles_result.content is None:
-                logger.debug('Skipping subtitle {}: no content'.format(subtitles_result))
+                logger.debug(f'Skipping subtitle {subtitles_result}: no content')
             else:
                 subtitles_file_name = get_subtitle_path(original_file_name, subtitles_result.language)
                 subtitles_path = os.path.join(TEMP_PATH, subtitles_file_name)
-                logger.info('Saving {} to: {}'.format(subtitles_result, subtitles_path))
+                logger.info(f'Saving {subtitles_result} to: {subtitles_path}')
                 try:
                     open(subtitles_path, 'wb').write(subtitles_result.content)
-                    logger.info('Uploading {}'.format(subtitles_path))
+                    logger.info(f'Uploading {subtitles_path}')
                     try:
                         upload_file(subtitles_path)
                     except Exception:
                         # Catch all exceptions so the script won't stop.
-                        logger.exception('Failed to upload file: {}'.format(subtitles_path))
+                        logger.exception(f'Failed to upload file: {subtitles_path}')
                 except OSError:
-                    logger.error('Failed to save subtitles in path: {}'.format(subtitles_path))
+                    logger.error(f'Failed to save subtitles in path: {subtitles_path}')
                 return subtitles_path
         return None
     except ValueError:
@@ -164,59 +157,71 @@ def main():
     """
     with logbook.NestedSetup(_get_log_handlers()).applicationbound():
         logger.info('Subtitles Monitor started!')
+
         # Verify paths.
         if not os.path.isfile(config.ORIGINAL_NAMES_LOG):
             raise FileNotFoundError('Couldn\'t read original names file! Stopping...')
         if not os.path.isdir(MEDIA_ROOT_PATH):
             raise NotADirectoryError('Couldn\'t find media root directory! Stopping...')
+
         try:
             original_paths_list = []
             subtitles_map = defaultdict(int)
             # Set subliminal cache first.
             logger.debug('Setting subtitles cache...')
             configure_subtitles_cache()
+
             logger.info('Going over the original names file...')
             with open(config.ORIGINAL_NAMES_LOG, 'r', encoding='utf8') as original_names_file:
                 line = original_names_file.readline()
-                while line != '':
+                while line:
                     original_path = line.strip()
                     original_paths_list.append(original_path)
                     if RESULTS_LIMIT and len(original_paths_list) > RESULTS_LIMIT:
                         original_paths_list.pop(0)
                     # Fetch next line.
                     line = original_names_file.readline()
-            logger.info('Searching for subtitles for the {} newest videos...'.format(RESULTS_LIMIT))
+
+            logger.info(f'Searching for subtitles for the {RESULTS_LIMIT} newest videos...')
             for original_path in original_paths_list:
-                video_details, parent_dir, guessed_file_name = get_file_path_details(original_path)
-                if not (parent_dir and guessed_file_name):
+                fixed_file_name, file_extension = os.path.splitext(os.path.basename(original_path))
+                # Remove brackets group name prefix.
+                if fixed_file_name.startswith('[') and ']' in fixed_file_name:
+                    fixed_file_name = fixed_file_name.split(']', 1)[1]
+
+                cloud_dir, cloud_file = guess_path(fixed_file_name)
+                if not (cloud_dir and cloud_file):
                     continue
-                base_dir = os.path.join(
-                    MEDIA_ROOT_PATH, config.CLOUD_TV_PATH if video_details['type'] == 'episode' else
-                    config.CLOUD_MOVIES_PATH)
-                current_path = os.path.join(base_dir, parent_dir,
-                                            '{}{}'.format(guessed_file_name, os.path.splitext(original_path)[1]))
+
+                current_path = os.path.join(MEDIA_ROOT_PATH, cloud_dir, f'{cloud_file}{file_extension}')
+
                 # Check actual video file.
                 if current_path and os.path.isfile(current_path):
-                    logger.info('Checking subtitles for: {}'.format(current_path))
+                    logger.info(f'Checking subtitles for: {current_path}')
+
                     # Find missing subtitle files.
                     video_base_path = os.path.splitext(current_path)[0]
                     languages_list = []
                     for language_extension in LANGUAGE_EXTENSIONS:
                         if not os.path.isfile(video_base_path + language_extension + SUBTITLES_EXTENSION):
                             languages_list.append(babelfish.Language.fromalpha2(language_extension.lstrip('.')))
+
                     # Download missing subtitles.
                     for language in languages_list:
                         result_path = find_file_subtitles(original_path, current_path, language)
                         if result_path:
                             subtitles_map[language.alpha3] += 1
+
+                            # Refresh Plex data (after waiting some time for the file to upload).
                             if config.PLEX_SERVERS:
-                                # Refresh Plex data (after waiting some time for the file to upload).
+                                video_details = guessit(fixed_file_name)
                                 time.sleep(5)
                                 episode = video_details.get('episode')
                                 refresh_plex_item(video_details['title'], video_details.get('season'),
                                                   [episode] if not isinstance(episode, list) else episode)
                 else:
-                    logger.info('Couldn\'t find: {}'.format(current_path))
+                    logger.info(f'Couldn\'t find: {current_path}')
+
             logger.info('All done! The results are: {}'.format(
                 ', '.join(['{} - {}'.format(language, counter) for language, counter in subtitles_map.items()])))
         except:

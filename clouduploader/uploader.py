@@ -1,13 +1,13 @@
 #!/usr/local/bin/python3
 import os
+import random
 import shutil
+import string
 import subprocess
 import sys
-import string
-import random
 
-import logbook
 from guessit import guessit
+import logbook
 from showsformatter import format_show
 
 from clouduploader import config
@@ -45,18 +45,22 @@ def _encrypt(encrypted_dir, plain_dir):
     :return: True if succeeded, and False otherwise.
     """
     logger.info('Encrypting directory tree...')
+
     # Verify config environment variable first.
     if not os.environ.get(config.ENCFS_ENVIRONMENT_VARIABLE):
-        logger.info('{} environment variable is not defined. Defining: {}'.format(
-            config.ENCFS_ENVIRONMENT_VARIABLE, config.ENCFS_CONFIG_PATH))
+        logger.info(f'{config.ENCFS_ENVIRONMENT_VARIABLE} environment variable is not defined. '
+                    f'Defining: {config.ENCFS_CONFIG_PATH}')
         os.environ[config.ENCFS_ENVIRONMENT_VARIABLE] = config.ENCFS_CONFIG_PATH
+
     # Encrypt!
     os.makedirs(encrypted_dir)
-    return_code = subprocess.call('echo {} | {} -S "{}" "{}"'.format(
-        config.ENCFS_PASSWORD, config.ENCFS_PATH, encrypted_dir, plain_dir), shell=True)
+    return_code = subprocess.call(
+        f'echo {config.ENCFS_PASSWORD} | {config.ENCFS_PATH} -S "{encrypted_dir}" "{plain_dir}"', shell=True)
+
     if return_code != 0:
-        logger.error('Bad return code ({}) for encryption. Stopping!'.format(return_code))
+        logger.error(f'Bad return code ({return_code}) for encryption. Stopping!')
         return False
+
     return True
 
 
@@ -87,8 +91,8 @@ def _extract_ufc_path(file_name):
     else:
         title = 'UFC'
 
-    cloud_dir = os.path.join(config.CLOUD_UFC_PATH, '{} {}'.format(title, episode_num))
-    cloud_file = '{} {}'.format(title, episode_num)
+    cloud_dir = os.path.join(config.CLOUD_UFC_PATH, f'{title} {episode_num}')
+    cloud_file = f'{title} {episode_num}'
     if 'prelim' in lowercase_file_name:
         cloud_file += ' - Preliminaries'
     return cloud_dir, cloud_file
@@ -106,7 +110,7 @@ def _extract_masterclass_path(file_name):
     return cloud_dir, cloud_file
 
 
-def _guess_path(file_name):
+def guess_path(file_name):
     """
     Guess cloud dir and cloud file name from the given file name.
 
@@ -115,35 +119,44 @@ def _guess_path(file_name):
     """
     cloud_dir = None
     cloud_file = None
+
     # Start guessing!
     guess_results = guessit(file_name)
     video_type = guess_results.get('type')
     title = guess_results.get('title')
+
     if isinstance(title, list):
         title = title[0]
+
     if video_type == 'episode' and title:
         # Translate show title if needed.
         title = format_show(title)
         season = guess_results.get('season')
+
         # Skip rare cases of weird episodes names.
         if season and not isinstance(season, list):
             episode = guess_results.get('episode')
+
             if episode:
                 # Dirs that end with . are evil!
                 fixed_dir_name = title.rstrip('.')
                 cloud_dir = os.path.join(config.CLOUD_TV_PATH, fixed_dir_name, 'Season {:02d}'.format(season))
+
                 if isinstance(episode, list):
                     episode_str = 'E{:02d}-E{:02d}'.format(episode[0], episode[-1])
                 else:
                     episode_str = 'E{:02d}'.format(episode)
                 cloud_file = '{} - S{:02d}{}'.format(title, season, episode_str)
+
     elif video_type == 'movie' and title:
         # Make sure every word starts with a capital letter.
         title = title.title()
         year = guess_results.get('year')
+
         if year:
-            cloud_dir = os.path.join(config.CLOUD_MOVIES_PATH, '{} ({})'.format(title, year))
-            cloud_file = '{} ({})'.format(title, year)
+            cloud_dir = os.path.join(config.CLOUD_MOVIES_PATH, f'{title} ({year})')
+            cloud_file = f'{title} ({year})'
+
     return cloud_dir, cloud_file
 
 
@@ -153,7 +166,7 @@ def upload_file(file_path):
 
     :param: file_path: The file to upload.
     """
-    logger.info('Uploading file: {}'.format(file_path))
+    logger.info(f'Uploading file: {file_path}')
     fixed_file_path = file_path
     file_parts = os.path.splitext(file_path)
 
@@ -168,7 +181,7 @@ def upload_file(file_path):
         return
     for black_list_word in NAMES_BLACK_LIST:
         if black_list_word in file_name.lower():
-            logger.info('File name contains a black listed word ({})! Skipping...'.format(black_list_word))
+            logger.info(f'File name contains a black listed word ({black_list_word})! Skipping...')
             return
     language_extension = None
     is_subtitles = file_extension in SUBTITLES_EXTENSIONS
@@ -185,7 +198,6 @@ def upload_file(file_path):
                 language_extension = DEFAULT_LANGUAGE_EXTENSION
                 fixed_file_path = file_name + DEFAULT_VIDEO_EXTENSION
 
-    # Create cloud path based on guessit results.
     fixed_file_name = os.path.basename(fixed_file_path)
     # Remove brackets group name prefix.
     if fixed_file_name.startswith('[') and ']' in fixed_file_name:
@@ -196,7 +208,7 @@ def upload_file(file_path):
     elif 'masterclass' in fixed_file_name.lower() or 'masterclass' in fixed_file_path.lower():
         cloud_dir, cloud_file = _extract_masterclass_path(fixed_file_name)
     else:
-        cloud_dir, cloud_file = _guess_path(fixed_file_name)
+        cloud_dir, cloud_file = guess_path(fixed_file_name)
 
     if cloud_dir and cloud_file:
         if language_extension:
@@ -224,7 +236,7 @@ def upload_file(file_path):
             # Upload the encrypted directory tree instead of the plain one.
             upload_base_dir = encrypted_base_dir
         gdrive_dir = upload_base_dir.split(base_dir)[1].strip(os.path.sep)
-        logger.info('Moving file to temporary path: {}'.format(cloud_temp_path))
+        logger.info(f'Moving file to temporary path: {cloud_temp_path}')
         os.makedirs(cloud_temp_path)
         if config.SHOULD_DELETE:
             shutil.move(file_path, cloud_temp_path)
@@ -238,11 +250,11 @@ def upload_file(file_path):
         while return_code != 0 and upload_tries < config.MAX_UPLOAD_TRIES:
             logger.info('Uploading file...')
             upload_tries += 1
-            return_code = subprocess.call('{} --config {} copyto "{}" "GDrive:{}"'.format(
-                config.RCLONE_PATH, config.RCLONE_CONFIG_PATH, upload_base_dir, gdrive_dir), shell=True)
+            return_code = subprocess.call(f'{config.RCLONE_PATH} --config {config.RCLONE_CONFIG_PATH} copyto '
+                                          f'"{upload_base_dir}" "GDrive:{gdrive_dir}"', shell=True)
             # Check results.
             if return_code != 0:
-                logger.error('Bad return code ({}) for file: {}'.format(return_code, cloud_file))
+                logger.error(f'Bad return code ({return_code}) for file: {cloud_file}')
                 if upload_tries < config.MAX_UPLOAD_TRIES:
                     logger.info('Trying again!')
                 else:
@@ -260,7 +272,7 @@ def upload_file(file_path):
                 os.rename(os.path.join(original_dir, cloud_file), file_path)
         # Unmount ENCFS directory.
         if config.SHOULD_ENCRYPT:
-            subprocess.call('{} -u "{}"'.format(config.FUSERMOUNT_PATH, plain_base_dir), shell=True)
+            subprocess.call(f'{config.FUSERMOUNT_PATH} -u "{plain_base_dir}"', shell=True)
         # Delete all temporary directories.
         shutil.rmtree(base_dir)
     else:
