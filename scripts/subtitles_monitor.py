@@ -10,6 +10,7 @@ from guessit import guessit
 import logbook
 from plexapi.server import PlexServer
 import requests
+from showsformatter import format_show
 import subliminal
 from subliminal.cache import region
 from subliminal.subtitle import get_subtitle_path
@@ -215,10 +216,22 @@ def main():
                             # Refresh Plex data (after waiting some time for the file to upload).
                             if config.PLEX_SERVERS:
                                 video_details = guessit(fixed_file_name)
-                                time.sleep(5)
+                                title = video_details['title']
+                                season = video_details.get('season')
                                 episode = video_details.get('episode')
-                                refresh_plex_item(video_details['title'], video_details.get('season'),
-                                                  [episode] if not isinstance(episode, list) else episode)
+
+                                if isinstance(title, list):
+                                    title = title[0]
+
+                                # Use the best show title available.
+                                if season and episode:
+                                    title = format_show(title)
+                                else:
+                                    title = title.title()
+
+                                time.sleep(5)
+                                refresh_plex_item(
+                                    title, season, [episode] if not isinstance(episode, list) else episode)
                 else:
                     logger.info(f'Couldn\'t find: {current_path}')
 

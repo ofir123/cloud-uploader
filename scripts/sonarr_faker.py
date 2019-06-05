@@ -8,8 +8,8 @@ import logbook
 
 # Directories settings.
 GDRIVE_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
-FAKE_ROOT_PATH = '/mnt/vdb/fake'
-LOG_FILE_PATH = '/var/log/sonarr_faker.log'
+FAKE_ROOT_PATH = '/mnt/vdb/sonarr/fake'
+LOG_FILE_PATH = '/var/log/sonarr_faker/sonarr_faker.log'
 
 logger = logbook.Logger(__name__)
 
