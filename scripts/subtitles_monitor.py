@@ -88,7 +88,9 @@ def refresh_plex_item(title, season=None, episodes=None):
                 if is_episode:
                     plex_season = plex.library.section('TV Shows').get(title).seasons()[season - 1].episodes()
                     for episode in episodes:
-                        plex_season[episode - 1].refresh()
+                        # Sometimes the episode won't appear in Plex, so no refresh is needed.
+                        if len(plex_season) >= episode:
+                            plex_season[episode - 1].refresh()
                 else:
                     plex.library.section('Movies').get(title).refresh()
             except Exception:
