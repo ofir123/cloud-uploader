@@ -22,7 +22,7 @@ from clouduploader.uploader import guess_path, upload_file
 requests.packages.urllib3.disable_warnings()
 
 # Directories settings.
-MEDIA_ROOT_PATH = '/mnt/vdb/plexdrive/gdrive_decrypted'
+MEDIA_ROOT_PATH = '/mnt/vdb/rclone/gdrive_decrypted'
 TEMP_PATH = '/tmp'
 # A map between each language and its favorite subliminal providers (None for all providers).
 PROVIDERS_MAP = {
