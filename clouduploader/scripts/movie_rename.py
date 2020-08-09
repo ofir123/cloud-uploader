@@ -5,7 +5,7 @@ import sys
 
 import logbook
 
-PREVIEW_LINES_NUM = 30
+PREVIEW_LINES_NUM = 150
 
 logger = logbook.Logger(__name__)
 logbook.StreamHandler(
@@ -79,12 +79,13 @@ def main():
                 logger.info('Deleted file.')
                 continue
 
-        logger.info(f'Renaming {file_name} to {new_name}')
-        should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
-        if should_rename:
-            os.rename(full_path, os.path.join(path, new_name))
-        else:
-            logger.info('Skipped renaming.')
+        if file_name != new_name:
+            logger.info(f'Renaming {file_name} to {new_name}')
+            should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
+            if should_rename:
+                os.rename(full_path, os.path.join(path, new_name))
+            else:
+                logger.info('Skipped renaming.')
 
     logger.info('All done!')
 
