@@ -45,8 +45,16 @@ def main():
             main_video_size = file_size
             main_video_path = full_path
         if file_name.endswith('en.srt'):
-            preview = '\n'.join(open(full_path).readlines(PREVIEW_LINES_NUM))
-            logger.info(f'Preview for {file_name}:\n{preview}')
+            preview = None
+            try:
+                preview = '\n'.join(open(full_path, 'r').readlines(PREVIEW_LINES_NUM))
+            except UnicodeDecodeError:
+                try:
+                    preview = '\n'.join(open(full_path, 'r', encoding='cp1255').readlines(PREVIEW_LINES_NUM))
+                except UnicodeDecodeError:
+                    logger.error('Could\'nt find out the right encoding for the file')
+            if preview:
+                logger.info(f'Preview for {file_name}:\n{preview}')
             should_rename_english_subtitles = (input('Rename to Hebrew subtitles [n]: ') or 'n') == 'y'
         if file_name.endswith('he.srt'):
             hebrew_subtitles_path = full_path
