@@ -30,6 +30,7 @@ def main():
     season = int(input(f'Please enter the season number [{guessed_season}]: ') or guessed_season)
     numbers_before_episode = int(input(
         'Please enter the amount of numeric characters before the episode number [0]: ') or 0)
+    dots_in_name = show_name.count('.')
 
     new_paths = []
     for file_name in tqdm(files_list):
@@ -43,7 +44,7 @@ def main():
                 current_numbers_before_episode -= 1
             episode_index += 1
         episode = int(file_name[episode_index:episode_index + 2])
-        extension = file_name.split('.', 1)[1]
+        extension = file_name.split('.', dots_in_name + 1)[dots_in_name + 1]
         new_name = f'{show_name} - S{season:02}E{episode:02}.{extension}'
         new_paths.append((full_path, os.path.join(path, new_name)))
 
