@@ -33,10 +33,11 @@ def main():
         full_path = os.path.join(path, file_name)
         if os.path.isdir(full_path):
             continue
+        current_numbers_before_episode = numbers_before_episode
         episode_index = 0
-        while not file_name[episode_index].isnumeric() or numbers_before_episode:
+        while not file_name[episode_index].isnumeric() or current_numbers_before_episode:
             if file_name[episode_index].isnumeric():
-                numbers_before_episode -= 1
+                current_numbers_before_episode -= 1
         episode_index += 1
         episode = int(file_name[episode_index:episode_index + 2])
         extension = file_name.split('.', 1)[1]
