@@ -32,6 +32,7 @@ def main():
     # Perform first scan for directory details.
     should_rename_english_subtitles = False
     hebrew_subtitles_path = None
+    # Main video file is determined by the file with the biggest size.
     main_video_size = 0
     main_video_path = None
 
@@ -63,6 +64,8 @@ def main():
         logger.info(f'Deleting previous Hebrew subtitles: {hebrew_subtitles_path}')
         os.remove(hebrew_subtitles_path)
 
+    # Files list needs to be updated because changes were made.
+    files_list = sorted(os.listdir(path))
     for file_name in files_list:
         full_path = os.path.join(path, file_name)
         if os.path.isdir(full_path):
@@ -88,6 +91,16 @@ def main():
                 os.rename(full_path, os.path.join(path, new_name))
             else:
                 logger.info('Skipped renaming.')
+
+    # Change directory name as well.
+    if movie_name != path.name:
+        new_name = path.parent.joinpath(movie_name)
+        logger.info(f'Renaming {path} to {new_name}')
+        should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
+        if should_rename:
+            os.rename(path, new_name)
+        else:
+            logger.info('Skipped renaming.')
 
     logger.info('All done!')
 
