@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 import logbook
+from tqdm import tqdm
 
 logger = logbook.Logger(__name__)
 logbook.StreamHandler(sys.stdout, level=logbook.DEBUG, bubble=True).push_application()
@@ -29,7 +30,7 @@ def main():
         'Please enter the amount of numeric characters before the episode number [0]: ') or 0)
 
     new_paths = []
-    for file_name in files_list:
+    for file_name in tqdm(files_list):
         full_path = os.path.join(path, file_name)
         if os.path.isdir(full_path):
             continue
@@ -38,7 +39,7 @@ def main():
         while not file_name[episode_index].isnumeric() or current_numbers_before_episode:
             if file_name[episode_index].isnumeric():
                 current_numbers_before_episode -= 1
-        episode_index += 1
+            episode_index += 1
         episode = int(file_name[episode_index:episode_index + 2])
         extension = file_name.split('.', 1)[1]
         new_name = f'{show_name} - S{season:02}E{episode:02}.{extension}'
@@ -49,7 +50,7 @@ def main():
 
     if should_rename:
         logger.info(f'Renaming {len(new_paths)} files...')
-        for old_path, new_path in new_paths:
+        for old_path, new_path in tqdm(new_paths):
             os.rename(old_path, new_path)
     else:
         logger.info('Skipped renaming.')
