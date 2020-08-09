@@ -7,7 +7,9 @@ import logbook
 from tqdm import tqdm
 
 logger = logbook.Logger(__name__)
-logbook.StreamHandler(sys.stdout, level=logbook.DEBUG, bubble=True).push_application()
+logbook.StreamHandler(
+    sys.stdout, level=logbook.DEBUG, bubble=True,
+    format_string='[{record.time:%Y-%m-%d %H:%M:%S}] {record.level_name}: {record.message}').push_application()
 
 
 def main():
