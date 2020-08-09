@@ -69,6 +69,8 @@ def main():
             continue
 
         extension = file_name.split('.', dots_in_name + 1)[dots_in_name + 1]
+        if should_rename_english_subtitles and extension == 'en.srt':
+            extension = 'he.srt'
         new_name = f'{movie_name}.{extension}'
 
         if extension not in ['he.srt', 'en.srt'] and full_path != main_video_path:
