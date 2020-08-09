@@ -14,10 +14,10 @@ logbook.StreamHandler(
 
 def main():
     """
-    Rename all episodes in the current season directory, interactively based on user preferences.
+    Rename all episodes in the given (or current) season directory, interactively based on user preferences.
     """
     path = Path(sys.argv[1] if len(sys.argv) == 2 else os.getcwd())
-    logger.info(f'Starting episode rename for path: {path}')
+    logger.info(f'Starting episodes rename for path: {path}')
     if len(sys.argv) == 1:
         logger.debug('To use a different path than the current one, give it as a parameter')
 
