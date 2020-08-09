@@ -95,7 +95,7 @@ def main():
     # Change directory name as well.
     if movie_name != path.name:
         new_name = path.parent.joinpath(movie_name)
-        logger.info(f'Renaming {path} to {new_name}')
+        logger.info(f'Renaming directory {path} to {new_name}')
         should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
         if should_rename:
             os.rename(path, new_name)
