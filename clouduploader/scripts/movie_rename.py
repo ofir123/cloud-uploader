@@ -86,21 +86,13 @@ def main():
 
         if file_name != new_name:
             logger.info(f'Renaming {file_name} to {new_name}')
-            should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
-            if should_rename:
-                os.rename(full_path, os.path.join(path, new_name))
-            else:
-                logger.info('Skipped renaming.')
+            os.rename(full_path, os.path.join(path, new_name))
 
     # Change directory name as well.
     if movie_name != path.name:
         new_name = path.parent.joinpath(movie_name)
         logger.info(f'Renaming directory {path} to {new_name}')
-        should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
-        if should_rename:
-            os.rename(path, new_name)
-        else:
-            logger.info('Skipped renaming.')
+        os.rename(path, new_name)
 
     logger.info('All done!')
 
