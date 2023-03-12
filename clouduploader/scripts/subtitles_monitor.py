@@ -26,16 +26,11 @@ MEDIA_ROOT_PATH = '/mnt/vdb/rclone/gdrive_decrypted'
 TEMP_PATH = '/tmp'
 # A map between each language and its favorite subliminal providers (None for all providers).
 PROVIDERS_MAP = {
-    babelfish.Language('heb'): ['cinemast', 'wizdom'],
+    babelfish.Language('heb'): ['wizdom'],
     babelfish.Language('eng'): None
 }
 # A map between each provider and its credentials.
-PROVIDER_CONFIGS = {
-    'cinemast': {
-        'username': 'subliminal@gmail.com',
-        'password': 'subliminal'
-    }
-}
+PROVIDER_CONFIGS = {}
 
 # The monitor will look only at the latest X files (or all of them if RESULTS_LIMIT is None).
 RESULTS_LIMIT = 1000
