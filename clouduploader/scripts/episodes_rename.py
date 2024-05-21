@@ -28,25 +28,33 @@ def main():
     show_name = input(f'Please enter the show\'s name [{guessed_show_name}]: ') or guessed_show_name
     guessed_season = path.name.rsplit(' ')[1]
     season = int(input(f'Please enter the season number [{guessed_season}]: ') or guessed_season)
-    numbers_before_episode = int(input(
-        'Please enter the amount of numeric characters before the episode number [0]: ') or 0)
+    initial_episode = int(input(f'Optional - Enter an initial episode number to override current numbers (or click Enter to skip): ') or 0)
+    if initial_episode == 0:
+        numbers_before_episode = int(input(
+            'Please enter the amount of numeric characters before the episode number [0]: ') or 0)
     dots_in_name = show_name.count('.')
 
     new_paths = []
+    file_index = 0
     for file_name in tqdm(files_list):
         full_path = os.path.join(path, file_name)
         if os.path.isdir(full_path):
             continue
-        current_numbers_before_episode = numbers_before_episode
-        episode_index = 0
-        while not file_name[episode_index].isnumeric() or current_numbers_before_episode:
-            if file_name[episode_index].isnumeric():
-                current_numbers_before_episode -= 1
-            episode_index += 1
-        episode = int(file_name[episode_index:episode_index + 2])
+        if initial_episode == 0:
+            current_numbers_before_episode = numbers_before_episode
+            episode_index = 0
+            while not file_name[episode_index].isnumeric() or current_numbers_before_episode:
+                if file_name[episode_index].isnumeric():
+                    current_numbers_before_episode -= 1
+                episode_index += 1
+            episode = int(file_name[episode_index:episode_index + 2])
+        else:
+            episode = initial_episode + file_index
+
         extension = file_name.split('.', dots_in_name + 1)[dots_in_name + 1]
         new_name = f'{show_name} - S{season:02}E{episode:02}.{extension}'
         new_paths.append((full_path, os.path.join(path, new_name)))
+        file_index += 1
 
     logger.info('New files list ({}):\n{}'.format(len(new_paths), '\n'.join([p[1] for p in new_paths])))
     should_rename = (input('Please approve this rename [y]: ') or 'y') == 'y'
