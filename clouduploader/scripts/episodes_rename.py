@@ -26,13 +26,12 @@ def main():
 
     guessed_show_name = path.parent.name
     show_name = input(f'Please enter the show\'s name [{guessed_show_name}]: ') or guessed_show_name
-    guessed_season = path.name.rsplit(' ')[1]
+    guessed_season = path.name.rsplit(' ')[1] if ' ' in path.name else '01'
     season = int(input(f'Please enter the season number [{guessed_season}]: ') or guessed_season)
     initial_episode = int(input(f'Optional - Enter an initial episode number to override current numbers (or click Enter to skip): ') or 0)
     if initial_episode == 0:
         numbers_before_episode = int(input(
             'Please enter the amount of numeric characters before the episode number [0]: ') or 0)
-    dots_in_name = show_name.count('.')
 
     new_paths = []
     file_index = 0
@@ -51,7 +50,11 @@ def main():
         else:
             episode = initial_episode + file_index
 
-        extension = file_name.split('.', dots_in_name + 1)[dots_in_name + 1]
+        # Subtitle extension might contain an additional two letters extension for the language.
+        if file_name.endswith('.srt') and len(file_name) > 7 and file_name[-7] == '.':
+            extension = file_name[-6:]
+        else:
+            extension = file_name.rsplit('.')[-1]
         new_name = f'{show_name} - S{season:02}E{episode:02}.{extension}'
         new_paths.append((full_path, os.path.join(path, new_name)))
         file_index += 1
