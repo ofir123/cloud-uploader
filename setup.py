@@ -13,6 +13,7 @@ setup(
             'subtitles_monitor = clouduploader.scripts.subtitles_monitor:main',
             'episodes_rename = clouduploader.scripts.episodes_rename:main',
             'movie_rename = clouduploader.scripts.movie_rename:main',
+            'suffix_add = clouduploader.scripts.suffix_add:main',
         ]
     }
 )
