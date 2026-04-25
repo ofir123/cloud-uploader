@@ -123,7 +123,7 @@ def upload_video(file_path):
 
     # Unmount ENCFS directory.
     if config.SHOULD_ENCRYPT:
-        subprocess.call(f'{config.FUSERMOUNT_PATH} -u "{plain_base_dir}"', shell=True)
+        subprocess.call(f'{config.UMOUNT_PATH} -l "{plain_base_dir}"', shell=True)
 
     # Delete all temporary directories.
     shutil.rmtree(base_dir)

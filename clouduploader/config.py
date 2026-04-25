@@ -9,7 +9,7 @@ MAX_UPLOAD_TRIES = 3
 # encfs settings.
 SHOULD_ENCRYPT = True
 ENCFS_PATH = '/usr/bin/encfs'
-FUSERMOUNT_PATH = '/usr/bin/fusermount'
+UMOUNT_PATH = '/usr/bin/umount'
 ENCFS_ENVIRONMENT_VARIABLE = 'ENCFS6_CONFIG'
 ENCFS_CONFIG_PATH = '/mnt/vdb/encfs6.xml'
 ENCFS_PASSWORD = 'Password1'
